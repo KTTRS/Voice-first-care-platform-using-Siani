@@ -209,6 +209,18 @@ cd packages/mobile && npm test
 - **CORS Protection**: Configured cross-origin resource sharing
 - **Helmet.js**: Security headers for Express
 - **Input Validation**: Zod schema validation for all inputs
+- **SQL Injection Protection**: Parameterized queries via Prisma
+
+⚠️ **Production Security Checklist**:
+- [ ] Enable rate limiting (see `SECURITY.md`)
+- [ ] Configure HTTPS/SSL
+- [ ] Set strong JWT secrets
+- [ ] Enable request logging
+- [ ] Implement audit trails
+- [ ] Review and apply security patches
+- [ ] Conduct security audit for HIPAA compliance
+
+See `SECURITY.md` for detailed security analysis and recommendations.
 
 ## 🤖 AI Features
 
