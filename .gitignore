@@ -137,3 +137,15 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Prisma migrations (tracked separately)
+packages/backend/prisma/migrations/*
+!packages/backend/prisma/migrations/.gitkeep
+
+# Expo
+packages/mobile/.expo
+packages/mobile/dist
+
+# Database
+*.db
+*.sqlite
