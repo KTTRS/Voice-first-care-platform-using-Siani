@@ -50,6 +50,21 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="home"
+          options={{
+            title: "Siani",
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="conversation"
+          options={{
+            title: "Conversation",
+            headerShown: false,
+            presentation: "modal",
+          }}
+        />
+        <Stack.Screen
           name="goals"
           options={{
             title: "My Goals",
@@ -59,7 +74,21 @@ export default function RootLayout() {
         <Stack.Screen
           name="feed"
           options={{
-            title: "Community Feed",
+            title: "Your Journey",
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="progress"
+          options={{
+            title: "Progress",
+            headerShown: true,
+          }}
+        />
+        <Stack.Screen
+          name="resource-assistant"
+          options={{
+            title: "Resource Assistant",
             headerShown: true,
           }}
         />

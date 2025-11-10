@@ -17,6 +17,9 @@ import {
 } from "../validators/memoryMoment.validator";
 import { logEvent } from "../utils/logger";
 import { vectorDBService } from "../services/vectordb.service";
+import { triggerSignalUpdate } from "../jobs/queues/signalQueue";
+import { detectSDOH } from "../utils/sdohDetector";
+import prisma from "../utils/db";
 
 const router = Router();
 router.use(authenticate);
@@ -108,6 +111,29 @@ router.post("/", async (req, res, next) => {
     const moment = await createMemoryMoment(payload);
     const actorId = (req as any).user?.id;
     logEvent("memoryMoment.created", { userId: actorId, data: moment });
+
+    // Detect SDOH needs from memory moment content
+    const sdohFlags = detectSDOH(moment.content);
+    if (sdohFlags.length > 0) {
+      // Create a signal event for SDOH detection tracking
+      await prisma.signalEvent.create({
+        data: {
+          userId: payload.userId,
+          type: "SDOH_DETECTED",
+          delta: sdohFlags.length * 0.5, // Each detected need increases signal
+        },
+      });
+
+      logEvent("sdoh.detected", {
+        userId: payload.userId,
+        needs: sdohFlags,
+        source: "memory_moment",
+        momentId: moment.id,
+      });
+    }
+
+    // Trigger signal score update
+    await triggerSignalUpdate(payload.userId, "memory_moment_created");
 
     res.status(201).json(moment);
   } catch (error) {

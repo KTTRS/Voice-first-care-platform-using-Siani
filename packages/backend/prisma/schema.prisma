@@ -65,6 +65,8 @@ model User {
   referralLoops     ReferralLoop[]
   signalEvents      SignalEvent[]
   feedEvents        FeedEvent[]
+  signalScores      SignalScore[]
+  resourceEngagements ResourceEngagement[]
 
   @@map("users")
 }
@@ -171,6 +173,8 @@ model MemoryMoment {
   emotion   String
   tone      String
   vectorId  String
+  source    String?  @default("text") // text | voice | chat
+  metadata  Json?    // Store audioFile, sdohFlags, etc.
   createdAt DateTime @default(now())
 
   @@map("memory_moments")
@@ -243,4 +247,94 @@ model FeedEvent {
   @@index([type])
   @@index([createdAt])
   @@map("feed_events")
+}
+
+model SignalScore {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Category Scores (0-10 scale, higher = more risk/concern)
+  medicationAdherence Float @default(0)
+  mentalHealthRisk    Float @default(0)
+  socialIsolation     Float @default(0)
+  careCoordination    Float @default(0)
+  systemTrust         Float @default(0)
+
+  // Overall composite score
+  overallRisk Float @default(0)
+
+  // Momentum indicators (-1 to 1: negative to positive)
+  trendMedication  Float @default(0)
+  trendMentalHealth Float @default(0)
+  trendSocial      Float @default(0)
+
+  // Contextual metadata
+  totalMoments       Int      @default(0)
+  totalGoalsCompleted Int     @default(0)
+  streakDays         Int      @default(0)
+  lastActivityAt     DateTime?
+
+  // SDOH (Social Determinants of Health) detected needs
+  detectedNeeds      String[] @default([])
+  sdohRisk           Float    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([overallRisk])
+  @@index([createdAt])
+  @@map("signal_scores")
+}
+
+model ResourceEngagement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Resource details
+  resourceId    String?  // Optional reference to resource catalog
+  resourceName  String   @default("") // e.g., "Food bank referral", "Housing assistance"
+  resourceType  String   @default("") // e.g., "food", "housing", "transportation"
+  
+  // SDOH need this addresses
+  needType   String   // e.g., "FOOD_INSECURITY", "HOUSING", "TRANSPORTATION"
+  
+  // Lifecycle tracking
+  status     String   // "DETECTED" | "OFFERED" | "ACCEPTED" | "DECLINED" | "COMPLETED" | "FAILED" | "ABANDONED" | "ESCALATED"
+  
+  // Detection metadata
+  confidence         Float?   // 0-1 confidence score from NLP
+  detectionContext   String?  // Excerpt from conversation that triggered detection
+  
+  // Timestamps
+  detectedAt   DateTime  @default(now())
+  offeredAt    DateTime?
+  acceptedAt   DateTime?
+  declinedAt   DateTime?
+  completedAt  DateTime?
+  failedAt     DateTime?
+  followedUpAt DateTime?
+  closedAt     DateTime?
+  lastFollowUpAt DateTime?
+  
+  // Outcome tracking
+  successRating Int?     // 1-5 scale
+  impactNotes   String?  // Free text about impact
+  
+  // Additional metadata
+  offeredBy     String?  // System, provider, etc.
+  declineReason String?  // If user declined
+  metadata      Json     @default("{}")  // Flexible storage for triggers, followUpCount, etc.
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([needType])
+  @@index([createdAt])
+  @@index([detectedAt])
+  @@map("resource_engagements")
 }

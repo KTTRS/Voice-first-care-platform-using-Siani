@@ -16,6 +16,7 @@ import {
 } from "../validators/goal.validator";
 import { logEvent } from "../utils/logger";
 import { trackGoalCreated } from "../jobs/queues/feedQueue";
+import { triggerSignalUpdate } from "../jobs/queues/signalQueue";
 
 const router = Router();
 router.use(authenticate);
@@ -91,6 +92,9 @@ router.post("/", async (req, res, next) => {
       title: goal.title,
       points: goal.points,
     }).catch((err) => console.error("Failed to track goal creation:", err));
+
+    // Trigger signal score update
+    await triggerSignalUpdate(goal.userId, "goal_created");
 
     logEvent("goal.created", { data: goal });
     res.status(201).json(goal);

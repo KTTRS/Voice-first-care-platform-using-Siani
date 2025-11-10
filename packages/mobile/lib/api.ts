@@ -145,3 +145,231 @@ export const createGoal = async (
 ) => {
   return fetchAPI("/api/goals", "POST", { userId, title, points });
 };
+
+// ===== Resource Engagement API =====
+
+// Get resource engagements for current user
+export const getResourceEngagements = async (
+  userId?: string,
+  status?: string
+) => {
+  const params = new URLSearchParams();
+  if (userId) params.append("userId", userId);
+  if (status) params.append("status", status);
+
+  const query = params.toString();
+  return fetchAPI(`/api/resource-engagements${query ? `?${query}` : ""}`);
+};
+
+// Get single resource engagement
+export const getResourceEngagement = async (engagementId: string) => {
+  return fetchAPI(`/api/resource-engagements/${engagementId}`);
+};
+
+// Update resource engagement status
+export const updateResourceEngagement = async (
+  engagementId: string,
+  updates: {
+    status?:
+      | "DETECTED"
+      | "OFFERED"
+      | "ACCEPTED"
+      | "DECLINED"
+      | "COMPLETED"
+      | "FAILED"
+      | "ABANDONED";
+    metadata?: any;
+  }
+) => {
+  return fetchAPI(
+    `/api/resource-engagements/${engagementId}`,
+    "PATCH",
+    updates
+  );
+};
+
+// Accept a resource offer
+export const acceptResourceOffer = async (engagementId: string) => {
+  return updateResourceEngagement(engagementId, { status: "ACCEPTED" });
+};
+
+// Decline a resource offer
+export const declineResourceOffer = async (
+  engagementId: string,
+  reason?: string
+) => {
+  return updateResourceEngagement(engagementId, {
+    status: "DECLINED",
+    metadata: { declineReason: reason },
+  });
+};
+
+// Mark resource as completed
+export const completeResourceEngagement = async (
+  engagementId: string,
+  rating?: number,
+  notes?: string
+) => {
+  return updateResourceEngagement(engagementId, {
+    status: "COMPLETED",
+    metadata: { successRating: rating, impactNotes: notes },
+  });
+};
+
+// Mark resource as failed
+export const failResourceEngagement = async (
+  engagementId: string,
+  reason?: string
+) => {
+  return updateResourceEngagement(engagementId, {
+    status: "FAILED",
+    metadata: { failureReason: reason },
+  });
+};
+
+// Send message to Siani (with SDOH detection)
+export const sendMessage = async (message: string, userId: string) => {
+  return fetchAPI("/api/messages", "POST", { message, userId });
+};
+
+// Get engagement statistics
+export const getEngagementStats = async (userId: string) => {
+  return fetchAPI(`/api/resource-engagements/stats/${userId}`);
+};
+
+// ===== Siani Intelligence API (Memory & Vectors) =====
+
+import { MemoryMoment, MemoryVector } from "./sianiMemory";
+
+/**
+ * Sync memory moments to backend
+ */
+export const syncMemoryMoments = async (moments: MemoryMoment[]) => {
+  return fetchAPI("/api/memoryMoments", "POST", { moments });
+};
+
+/**
+ * Get memory moments for user
+ */
+export const getMemoryMoments = async (
+  userId: string,
+  limit = 50,
+  offset = 0
+) => {
+  return fetchAPI(
+    `/api/memoryMoments?userId=${userId}&limit=${limit}&offset=${offset}`
+  );
+};
+
+/**
+ * Sync memory vectors to backend
+ */
+export const syncMemoryVectors = async (vectors: MemoryVector[]) => {
+  return fetchAPI("/api/memoryVectors", "POST", { vectors });
+};
+
+/**
+ * Search for similar memory vectors
+ */
+export const searchMemoryVectors = async (
+  userId: string,
+  vector: number[],
+  topK = 5,
+  minSimilarity = 0.7
+) => {
+  return fetchAPI("/api/memoryVectors/search", "POST", {
+    userId,
+    vector,
+    topK,
+    minSimilarity,
+  });
+};
+
+/**
+ * Create or update referral loop
+ */
+export const syncReferralLoop = async (loop: {
+  userId: string;
+  memoryMomentId: string;
+  category: string;
+  subcategory: string;
+  resourceOffered: boolean;
+  resourceAccepted?: boolean;
+  resourceShared?: boolean;
+  resourceViewed?: boolean;
+  resourceEngaged?: boolean;
+  resourceCompleted?: boolean;
+  loopClosed?: boolean;
+  status: string;
+}) => {
+  return fetchAPI("/api/referralLoops", "POST", loop);
+};
+
+/**
+ * Get unclosed referral loops for user
+ */
+export const getUnclosedLoops = async (userId: string) => {
+  return fetchAPI(`/api/referralLoops?userId=${userId}&loopClosed=false`);
+};
+
+/**
+ * Update referral loop status
+ */
+export const updateReferralLoop = async (
+  loopId: string,
+  updates: {
+    resourceAccepted?: boolean;
+    resourceShared?: boolean;
+    resourceViewed?: boolean;
+    resourceEngaged?: boolean;
+    resourceCompleted?: boolean;
+    loopClosed?: boolean;
+    status?: string;
+  }
+) => {
+  return fetchAPI(`/api/referralLoops/${loopId}`, "PATCH", updates);
+};
+
+/**
+ * Batch sync all Siani intelligence data
+ * (Memories, vectors, and loops)
+ */
+export const syncSianiData = async (data: {
+  moments?: MemoryMoment[];
+  vectors?: MemoryVector[];
+  loops?: Array<{
+    userId: string;
+    memoryMomentId: string;
+    category: string;
+    subcategory: string;
+    resourceOffered: boolean;
+    resourceAccepted?: boolean;
+    status: string;
+  }>;
+}) => {
+  const results = {
+    moments: null as any,
+    vectors: null as any,
+    loops: null as any,
+  };
+
+  // Sync moments first (they're referenced by vectors and loops)
+  if (data.moments && data.moments.length > 0) {
+    results.moments = await syncMemoryMoments(data.moments);
+  }
+
+  // Sync vectors (can happen in parallel with loops)
+  if (data.vectors && data.vectors.length > 0) {
+    results.vectors = await syncMemoryVectors(data.vectors);
+  }
+
+  // Sync loops
+  if (data.loops && data.loops.length > 0) {
+    // Sync each loop individually (backend doesn't support batch yet)
+    results.loops = await Promise.all(
+      data.loops.map((loop) => syncReferralLoop(loop))
+    );
+  }
+
+  return results;
+};
