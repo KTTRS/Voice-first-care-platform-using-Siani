@@ -181,7 +181,7 @@ export default function FeedScreen() {
               </View>
             </View>
           </View>
-        ))}
+        )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No activities yet!</Text>
@@ -189,7 +189,7 @@ export default function FeedScreen() {
               Start completing goals to see your feed
             </Text>
           </View>
-        )}
+        }
       />
     </Animated.View>
   );
