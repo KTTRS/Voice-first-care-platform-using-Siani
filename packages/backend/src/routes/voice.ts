@@ -14,6 +14,13 @@ import {
   calculateEmotionIntensity,
   analyzeEngagement,
 } from "../utils/emotionAnalysis";
+import {
+  transcribeAudio,
+  transcribeWithEmotionContext,
+  deleteAudioFile,
+  estimateTranscriptionCost,
+  checkTranscriptionHealth,
+} from "../services/transcription.service";
 
 const router = Router();
 
@@ -85,15 +92,14 @@ router.post(
       console.log(`[Voice] Analyzing audio for user ${userId}`);
       console.log(`[Voice] File: ${req.file.filename}`);
 
-      // TODO: Implement actual transcription
-      // Options:
-      // 1. OpenAI Whisper API
-      // 2. Deepgram API
-      // 3. Google Speech-to-Text
-      // 4. Local Whisper model
+      // Transcribe audio using configured strategy (OpenAI/Local/Hybrid)
+      const transcriptionResult = await transcribeAudio(req.file.path);
+      const transcription = transcriptionResult.text;
 
-      // For now, simulate transcription
-      const transcription = await simulateTranscription(req.file.path);
+      console.log(
+        `[Voice] Transcription completed via ${transcriptionResult.source}`
+      );
+      console.log(`[Voice] Text: ${transcription.substring(0, 100)}...`);
 
       // Enhanced emotion and intent analysis
       const emotionLevel = analyzeEmotion(transcription);
@@ -109,6 +115,11 @@ router.post(
 
       // Detect SDOH needs
       const sdohFlags = detectSDOH(transcription);
+
+      // Estimate transcription cost for tracking
+      const cost = transcriptionResult.duration
+        ? estimateTranscriptionCost(transcriptionResult.duration)
+        : null;
 
       // Create MemoryMoment with detected signals
       const memoryMoment = await prisma.memoryMoment.create({
@@ -127,6 +138,13 @@ router.post(
             engagement,
             needsIntervention,
             sianiResponse,
+            transcription: {
+              source: transcriptionResult.source,
+              language: transcriptionResult.language,
+              duration: transcriptionResult.duration,
+              cost: cost?.cost,
+              timestamp: transcriptionResult.timestamp,
+            },
             analyzedAt: new Date().toISOString(),
           },
         },
@@ -145,6 +163,11 @@ router.post(
         );
       }
 
+      // Delete audio file for privacy (optional - controlled by env var)
+      if (process.env.DELETE_AUDIO_AFTER_TRANSCRIPTION === "true") {
+        await deleteAudioFile(req.file.path);
+      }
+
       res.json({
         transcription,
         emotion: emotionLevel,
@@ -155,6 +178,8 @@ router.post(
         sdohFlags,
         needsIntervention,
         memoryMomentId: memoryMoment.id,
+        transcriptionSource: transcriptionResult.source,
+        language: transcriptionResult.language,
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
@@ -205,19 +230,57 @@ router.get(
 );
 
 /**
- * Simulate transcription (placeholder for actual Whisper/Deepgram integration)
+ * POST /api/voice/transcribe
+ * Dedicated endpoint for transcription only (no analysis)
+ * Used by mobile app for real-time transcription
  */
-async function simulateTranscription(audioPath: string): Promise<string> {
-  // TODO: Replace with actual transcription service
-  // Example with OpenAI Whisper:
-  // const file = fs.createReadStream(audioPath);
-  // const response = await openai.audio.transcriptions.create({
-  //   file,
-  //   model: "whisper-1",
-  // });
-  // return response.text;
+router.post(
+  "/transcribe",
+  authenticate,
+  upload.single("audio"),
+  async (req: any, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Audio file required" });
+      }
 
-  return "Simulated transcription: I'm feeling stressed about rent this month and don't have a ride to my appointment.";
-}
+      console.log(`[Voice] Transcribing audio: ${req.file.filename}`);
+
+      const result = await transcribeAudio(req.file.path);
+
+      // Delete audio file after transcription if configured
+      if (process.env.DELETE_AUDIO_AFTER_TRANSCRIPTION === "true") {
+        await deleteAudioFile(req.file.path);
+      }
+
+      res.json({
+        text: result.text,
+        language: result.language,
+        duration: result.duration,
+        source: result.source,
+        timestamp: result.timestamp,
+      });
+    } catch (error: any) {
+      console.error("[Voice] Transcription error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * GET /api/voice/health
+ * Check transcription service health
+ */
+router.get("/health", async (req: Request, res: Response) => {
+  try {
+    const health = await checkTranscriptionHealth();
+    res.json(health);
+  } catch (error: any) {
+    res.status(500).json({
+      healthy: false,
+      error: error.message,
+    });
+  }
+});
 
 export default router;

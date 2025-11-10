@@ -30,17 +30,33 @@ router.post("/search", async (req, res, next) => {
     const schema = z.object({
       query: z.string(),
       limit: z.number().min(1).max(50).default(10),
+      prosody: z
+        .object({
+          pitchHz: z.number().min(0).max(500),
+          energy: z.number().min(0).max(1),
+          emotion: z.enum([
+            "low",
+            "neutral",
+            "high",
+            "detached",
+            "anxious",
+            "calm",
+          ]),
+          pitchVariance: z.number().optional(),
+        })
+        .optional(),
     });
 
-    const { query, limit } = schema.parse(req.body);
+    const { query, limit, prosody } = schema.parse(req.body);
     const userId = (req as any).user?.id;
 
-    const results = await searchMemoryMoments(query, userId, limit);
+    const results = await searchMemoryMoments(query, userId, limit, prosody);
 
     res.json({
       query,
       count: results.length,
       results,
+      prosodyEnabled: !!prosody,
     });
   } catch (error) {
     if (error instanceof ZodError) {
@@ -106,9 +122,32 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const payload = createMemoryMomentSchema.parse(req.body);
+    const schema = z.object({
+      content: z.string(),
+      userId: z.string(),
+      emotion: z.string(),
+      tone: z.string(),
+      vectorId: z.string().default("weaviate"), // Default to weaviate storage
+      prosody: z
+        .object({
+          pitchHz: z.number().min(0).max(500),
+          energy: z.number().min(0).max(1),
+          emotion: z.enum([
+            "low",
+            "neutral",
+            "high",
+            "detached",
+            "anxious",
+            "calm",
+          ]),
+          pitchVariance: z.number().optional(),
+        })
+        .optional(),
+    });
 
-    const moment = await createMemoryMoment(payload);
+    const { prosody, ...payload } = schema.parse(req.body);
+
+    const moment = await createMemoryMoment(payload, prosody);
     const actorId = (req as any).user?.id;
     logEvent("memoryMoment.created", { userId: actorId, data: moment });
 
@@ -135,7 +174,10 @@ router.post("/", async (req, res, next) => {
     // Trigger signal score update
     await triggerSignalUpdate(payload.userId, "memory_moment_created");
 
-    res.status(201).json(moment);
+    res.status(201).json({
+      ...moment,
+      prosodyEnabled: !!prosody,
+    });
   } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ error: error.flatten() });
