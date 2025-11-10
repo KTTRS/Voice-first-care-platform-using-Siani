@@ -74,7 +74,11 @@ export default function GlassmorphicInput({
 
         <TextInput
           {...props}
-          style={[styles.input, icon && styles.inputWithIcon, props.style]}
+          style={[
+            styles.input,
+            icon ? styles.inputWithIcon : undefined,
+            style,
+          ]}
           placeholderTextColor="#B0AAA5"
           onFocus={handleFocus}
           onBlur={handleBlur}

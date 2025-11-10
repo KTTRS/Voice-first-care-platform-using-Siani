@@ -9,15 +9,8 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useEmotionStore } from "../store/emotionStore";
+import { useEmotionStore, Goal } from "../store/emotionStore";
 import * as Haptics from "expo-haptics";
-
-interface Goal {
-  id: string;
-  title: string;
-  progress: number;
-  category: string;
-}
 
 /**
  * ProfileScreen - User Settings & Goals
