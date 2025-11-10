@@ -1,5 +1,6 @@
 import { Audio } from "expo-av";
 import { useEmotionStore } from "../store/emotionStore";
+import { transcribeAudio as apiTranscribe } from "../lib/api";
 
 /**
  * Voice Utilities - Passive Voice Recording & Wake-Word Detection
@@ -227,32 +228,20 @@ export class WakeWordDetector {
  * Sends audio to backend for transcription
  */
 export async function transcribeAudio(
-  audioUri: string,
-  apiUrl: string,
-  token: string
-): Promise<{ text: string; emotion?: string } | null> {
+  audioUri: string
+): Promise<{ text: string; emotion?: string; language?: string } | null> {
   try {
-    const formData = new FormData();
-    formData.append("audio", {
-      uri: audioUri,
-      type: "audio/m4a",
-      name: "recording.m4a",
-    } as any);
+    const result = await apiTranscribe(audioUri);
 
-    const response = await fetch(`${apiUrl}/api/voice/transcribe`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
+    console.log(`[Voice] Transcription: "${result.text.substring(0, 50)}..."`);
+    console.log(
+      `[Voice] Language: ${result.language}, Source: ${result.source}`
+    );
 
-    if (!response.ok) {
-      throw new Error("Transcription failed");
-    }
-
-    const data = await response.json();
-    return data;
+    return {
+      text: result.text,
+      language: result.language,
+    };
   } catch (error) {
     console.error("Error transcribing audio:", error);
     return null;

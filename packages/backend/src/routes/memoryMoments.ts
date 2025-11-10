@@ -8,6 +8,11 @@ import {
   updateMemoryMoment,
   searchMemoryMoments,
 } from "../services/memoryMoment.service";
+import {
+  applyMemoryDecay,
+  cleanupExpiredMemories,
+  getMemoryLifecycleStats,
+} from "../services/memoryLifecycle.service";
 import { handlePrismaError } from "../utils/prismaError";
 import { authenticate } from "../utils/auth";
 import { getPaginationParams } from "../utils/pagination";
@@ -30,17 +35,33 @@ router.post("/search", async (req, res, next) => {
     const schema = z.object({
       query: z.string(),
       limit: z.number().min(1).max(50).default(10),
+      prosody: z
+        .object({
+          pitchHz: z.number().min(0).max(500),
+          energy: z.number().min(0).max(1),
+          emotion: z.enum([
+            "low",
+            "neutral",
+            "high",
+            "detached",
+            "anxious",
+            "calm",
+          ]),
+          pitchVariance: z.number().optional(),
+        })
+        .optional(),
     });
 
-    const { query, limit } = schema.parse(req.body);
+    const { query, limit, prosody } = schema.parse(req.body);
     const userId = (req as any).user?.id;
 
-    const results = await searchMemoryMoments(query, userId, limit);
+    const results = await searchMemoryMoments(query, userId, limit, prosody);
 
     res.json({
       query,
       count: results.length,
       results,
+      prosodyEnabled: !!prosody,
     });
   } catch (error) {
     if (error instanceof ZodError) {
@@ -106,9 +127,32 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const payload = createMemoryMomentSchema.parse(req.body);
+    const schema = z.object({
+      content: z.string(),
+      userId: z.string(),
+      emotion: z.string(),
+      tone: z.string(),
+      vectorId: z.string().default("weaviate"), // Default to weaviate storage
+      prosody: z
+        .object({
+          pitchHz: z.number().min(0).max(500),
+          energy: z.number().min(0).max(1),
+          emotion: z.enum([
+            "low",
+            "neutral",
+            "high",
+            "detached",
+            "anxious",
+            "calm",
+          ]),
+          pitchVariance: z.number().optional(),
+        })
+        .optional(),
+    });
 
-    const moment = await createMemoryMoment(payload);
+    const { prosody, ...payload } = schema.parse(req.body);
+
+    const moment = await createMemoryMoment(payload, prosody);
     const actorId = (req as any).user?.id;
     logEvent("memoryMoment.created", { userId: actorId, data: moment });
 
@@ -135,7 +179,10 @@ router.post("/", async (req, res, next) => {
     // Trigger signal score update
     await triggerSignalUpdate(payload.userId, "memory_moment_created");
 
-    res.status(201).json(moment);
+    res.status(201).json({
+      ...moment,
+      prosodyEnabled: !!prosody,
+    });
   } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ error: error.flatten() });
@@ -178,6 +225,71 @@ router.delete("/:id", async (req, res, next) => {
     res.json(removed);
   } catch (error) {
     return handlePrismaError(error, res, next, "MemoryMoment not found");
+  }
+});
+
+// Memory Lifecycle Management Endpoints
+
+/**
+ * GET /api/memory-moments/lifecycle/stats
+ * Get memory lifecycle statistics
+ */
+router.get("/lifecycle/stats", async (req, res, next) => {
+  try {
+    const stats = await getMemoryLifecycleStats();
+    res.json(stats);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/memory-moments/lifecycle/decay
+ * Apply memory decay to old memories
+ */
+router.post("/lifecycle/decay", async (req, res, next) => {
+  try {
+    const dryRun = req.body.dryRun !== false; // Default to dry run for safety
+    const decayedCount = await applyMemoryDecay(dryRun);
+    
+    res.json({
+      success: true,
+      decayedCount,
+      dryRun,
+      message: dryRun
+        ? `${decayedCount} memories would be decayed (dry run)`
+        : `${decayedCount} memories were decayed`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/memory-moments/lifecycle/cleanup
+ * Clean up expired memories
+ */
+router.post("/lifecycle/cleanup", async (req, res, next) => {
+  try {
+    const dryRun = req.body.dryRun !== false; // Default to dry run for safety
+    const gracePeriodMultiplier = req.body.gracePeriodMultiplier || 2.0;
+    
+    const deletedCount = await cleanupExpiredMemories(
+      gracePeriodMultiplier,
+      dryRun
+    );
+    
+    res.json({
+      success: true,
+      deletedCount,
+      dryRun,
+      gracePeriodMultiplier,
+      message: dryRun
+        ? `${deletedCount} memories would be deleted (dry run)`
+        : `${deletedCount} memories were deleted`,
+    });
+  } catch (error) {
+    next(error);
   }
 });
 

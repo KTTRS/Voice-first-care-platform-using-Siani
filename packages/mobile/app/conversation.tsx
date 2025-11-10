@@ -19,6 +19,7 @@ import {
 } from "@expo-google-fonts/inter";
 import SianiAvatar from "../components/SianiAvatar";
 import WaveformVisualizer from "../components/WaveformVisualizer";
+import { useProsodyStream } from "../hooks/useProsody";
 import { colors, spacing, typography } from "../theme/luxury";
 
 interface Message {
@@ -56,6 +57,14 @@ export default function ConversationScreen() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [currentEmotion, setCurrentEmotion] = useState<
+    "low" | "neutral" | "high" | "detached"
+  >("neutral");
+
+  // Connect to prosody WebSocket stream
+  const prosodyUrl =
+    process.env.EXPO_PUBLIC_PROSODY_WS_URL || "ws://localhost:3000/prosody";
+  const { pitchHz, energy } = useProsodyStream(prosodyUrl);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -256,10 +265,11 @@ export default function ConversationScreen() {
       {/* Siani Avatar (center, always visible) */}
       <View style={styles.avatarContainer}>
         <SianiAvatar
-          size={160}
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          onPress={handleAvatarPress}
+          emotion={currentEmotion}
+          speaking={isSpeaking}
+          audioLevel={0}
+          pitchHz={pitchHz || 180}
+          energy={energy || 0.4}
         />
       </View>
 

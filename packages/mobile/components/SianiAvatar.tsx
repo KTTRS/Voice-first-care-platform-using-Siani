@@ -1,286 +1,161 @@
 import React, { useEffect, useRef } from "react";
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Platform,
-} from "react-native";
+import { View, Image, StyleSheet, Animated, Easing } from "react-native";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 
-interface SianiAvatarProps {
-  size?: number;
-  isListening?: boolean;
-  isSpeaking?: boolean;
-  onPress?: () => void;
-  style?: any;
+interface Props {
+  emotion: "low" | "neutral" | "high" | "detached";
+  speaking?: boolean;
+  audioLevel?: number; // RMS amplitude 0–1
+  pitchHz?: number; // fundamental frequency
+  energy?: number; // loudness or dynamic range 0–1
 }
 
+const glowMap = {
+  low: {
+    color: "#FFB6B6",
+    base: 0.25,
+    curve: Easing.inOut(Easing.sin),
+    gain: 0.6,
+  },
+  neutral: {
+    color: "#FFD580",
+    base: 0.45,
+    curve: Easing.inOut(Easing.ease),
+    gain: 0.9,
+  },
+  high: {
+    color: "#9CFFB0",
+    base: 0.75,
+    curve: Easing.bezier(0.45, 0, 0.55, 1),
+    gain: 1.2,
+  },
+  detached: { color: "#B0B0B0", base: 0.2, curve: Easing.linear, gain: 0.4 },
+};
+
 /**
- * SianiAvatar - The ever-present conversational companion
+ * SianiAvatar - Prosody-Driven Multimodal Animation
  *
- * Design Philosophy:
- * - Subtle luxury (not flashy, old money aesthetic)
- * - Always visible, never intrusive
- * - Gentle breathing animation to feel alive
- * - Glows when active (listening/speaking)
- * - Tactile feedback on interaction
+ * Layers pitch contour, loudness (energy), and tempo variance onto emotion-based breathing curves.
+ *
+ * Animation Layers:
+ * - Base Glow: Emotion (low/high) → Color + brightness baseline
+ * - Breathing Loop: Idle (no voice) → Slow sine easing, 5.6s cycle (living presence)
+ * - Reactive Pulse: Audio amplitude → Real-time pulse depth ("speaks" with energy)
+ * - Prosody Flutter: Pitch + energy → Micro shimmer + tempo (expressive cadence)
+ * - Haptics: Emotion → Tactile resonance (physical empathy)
+ *
+ * Prosody Mapping:
+ * - Low pitch, low energy → Slow diffuse glow (calm, comforting)
+ * - Rising pitch → Glow sharpens (curiosity/emphasis)
+ * - High pitch, high energy → Bright pulsing with flicker (excitement, intensity)
+ * - Flattened pitch → Dim, slow (disengagement/detachment)
  */
 export default function SianiAvatar({
-  size = 120,
-  isListening = false,
-  isSpeaking = false,
-  onPress,
-  style,
-}: SianiAvatarProps) {
-  // Animation values
-  const breathAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  emotion = "neutral",
+  speaking = false,
+  audioLevel = 0,
+  pitchHz = 180,
+  energy = 0.4,
+}: Props) {
+  const glowAnim = useRef(new Animated.Value(glowMap[emotion].base)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const breathingLoop = useRef<Animated.CompositeAnimation | null>(null);
 
-  // Breathing animation (slow, calming)
-  useEffect(() => {
-    const breathAnimation = Animated.loop(
+  /** 1. Breathing rhythm (slow baseline modulation) */
+  const startBreathing = () => {
+    breathingLoop.current = Animated.loop(
       Animated.sequence([
-        Animated.timing(breathAnim, {
-          toValue: 1.08,
-          duration: 3000,
-          useNativeDriver: true,
+        Animated.timing(glowAnim, {
+          toValue: glowMap[emotion].base + 0.1,
+          duration: 2800,
+          easing: glowMap[emotion].curve,
+          useNativeDriver: false,
         }),
-        Animated.timing(breathAnim, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: true,
+        Animated.timing(glowAnim, {
+          toValue: glowMap[emotion].base - 0.05,
+          duration: 2800,
+          easing: glowMap[emotion].curve,
+          useNativeDriver: false,
         }),
       ])
     );
-
-    breathAnimation.start();
-    return () => breathAnimation.stop();
-  }, []);
-
-  // Glow animation (subtle ambient light)
-  useEffect(() => {
-    const glowAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    glowAnimation.start();
-    return () => glowAnimation.stop();
-  }, []);
-
-  // Active state animation (listening or speaking)
-  useEffect(() => {
-    if (isListening || isSpeaking) {
-      // Faster pulse when active
-      const activePulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      activePulse.start();
-      return () => activePulse.stop();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [isListening, isSpeaking]);
-
-  const handlePress = () => {
-    // Haptic feedback (subtle, elegant)
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    onPress?.();
+    breathingLoop.current.start();
   };
 
-  // Calculate glow color based on state
-  const glowColor = isListening
-    ? "rgba(218, 165, 32, 0.4)" // Gold when listening
-    : isSpeaking
-    ? "rgba(184, 134, 11, 0.5)" // Deeper gold when speaking
-    : "rgba(255, 255, 255, 0.2)"; // Subtle white glow when idle
+  /** Stop/start breathing loop on state changes */
+  useEffect(() => {
+    if (speaking) breathingLoop.current?.stop();
+    else startBreathing();
+  }, [speaking, emotion]);
 
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
-  });
+  /** 2. Prosody-driven modulation */
+  useEffect(() => {
+    if (!speaking) return;
+
+    const gain = glowMap[emotion].gain;
+
+    // Combined amplitude (energy + audioLevel averaged)
+    const amplitude = Math.min(1, (energy + audioLevel) / 2);
+
+    const brightness = glowMap[emotion].base + amplitude * 0.5 * gain;
+
+    // Higher pitch -> faster shimmer (shorter easing cycle)
+    const shimmerSpeed = 200 + Math.max(0, Math.min(600, 800 - (pitchHz || 0)));
+
+    Animated.parallel([
+      Animated.timing(glowAnim, {
+        toValue: brightness,
+        duration: shimmerSpeed,
+        easing: Easing.bezier(0.55, 0, 0.45, 1),
+        useNativeDriver: false,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1 + amplitude * 0.05 * gain,
+        friction: 6,
+        tension: 45,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [audioLevel, pitchHz, energy, speaking, emotion]);
+
+  /** 3. Emotion-linked haptics */
+  useEffect(() => {
+    if (emotion === "high")
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    else if (emotion === "low")
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    else if (emotion === "detached") Haptics.selectionAsync();
+  }, [emotion]);
+
+  const { color } = glowMap[emotion];
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={0.8}
-      style={[styles.container, style]}
-    >
-      {/* Outer glow ring */}
+    <View style={styles.container}>
       <Animated.View
-        style={[
-          styles.glowRing,
-          {
-            width: size + 40,
-            height: size + 40,
-            borderRadius: (size + 40) / 2,
-            backgroundColor: glowColor,
-            opacity: glowOpacity,
-            transform: [{ scale: breathAnim }],
-          },
-        ]}
+        style={[styles.glow, { backgroundColor: color, opacity: glowAnim }]}
       />
-
-      {/* Active pulse ring (only when listening/speaking) */}
-      {(isListening || isSpeaking) && (
-        <Animated.View
-          style={[
-            styles.pulseRing,
-            {
-              width: size + 60,
-              height: size + 60,
-              borderRadius: (size + 60) / 2,
-              borderColor: isListening
-                ? "rgba(218, 165, 32, 0.6)"
-                : "rgba(184, 134, 11, 0.7)",
-              transform: [{ scale: pulseAnim }],
-            },
-          ]}
-        />
-      )}
-
-      {/* Main avatar circle */}
-      <Animated.View
-        style={[
-          styles.avatar,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            transform: [{ scale: breathAnim }],
-          },
-        ]}
-      >
-        {/* Inner gradient effect */}
-        <View style={styles.innerGradient} />
-
-        {/* Center dot (Siani's essence) */}
-        <View style={styles.centerDot} />
-
-        {/* State indicator */}
-        {isListening && (
-          <View style={styles.listeningIndicator}>
-            <View style={styles.waveBar} />
-            <View style={[styles.waveBar, styles.waveBarMid]} />
-            <View style={styles.waveBar} />
-          </View>
-        )}
-
-        {isSpeaking && (
-          <View style={styles.speakingIndicator}>
-            <Animated.View
-              style={[
-                styles.speakingRing,
-                { opacity: glowOpacity, transform: [{ scale: pulseAnim }] },
-              ]}
-            />
-          </View>
-        )}
-      </Animated.View>
-    </TouchableOpacity>
+      <Animated.Image
+        source={require("../assets/siani-portrait.jpg")}
+        style={[styles.avatar, { transform: [{ scale: scaleAnim }] }]}
+      />
+      <LinearGradient
+        colors={[color, "transparent"]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  glowRing: {
+  container: { alignItems: "center", justifyContent: "center" },
+  avatar: { width: 260, height: 260, borderRadius: 140 },
+  glow: {
     position: "absolute",
-    shadowColor: "#DAA520",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  pulseRing: {
-    position: "absolute",
-    borderWidth: 2,
-  },
-  avatar: {
-    backgroundColor: "#1F1F1F", // Matte black
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  innerGradient: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    borderRadius: 999,
-    backgroundColor: "rgba(218, 165, 32, 0.05)", // Subtle gold tint
-  },
-  centerDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#DAA520", // Gold center
-    shadowColor: "#DAA520",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  listeningIndicator: {
-    position: "absolute",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  waveBar: {
-    width: 3,
-    height: 16,
-    backgroundColor: "#DAA520",
-    borderRadius: 2,
-  },
-  waveBarMid: {
-    height: 24,
-  },
-  speakingIndicator: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  speakingRing: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#DAA520",
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    zIndex: -1,
   },
 });

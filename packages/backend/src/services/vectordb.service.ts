@@ -94,6 +94,21 @@ class VectorDBService {
           description: "Tone of the moment",
         },
         {
+          name: "emotionIntensity",
+          dataType: ["number"],
+          description: "Emotion intensity score (0-1)",
+        },
+        {
+          name: "contextWeight",
+          dataType: ["number"],
+          description: "Context importance weight for retrieval",
+        },
+        {
+          name: "retentionTTL",
+          dataType: ["number"],
+          description: "Retention time-to-live in days",
+        },
+        {
           name: "timestamp",
           dataType: ["date"],
           description: "When the moment was created",
@@ -205,6 +220,9 @@ class VectorDBService {
     emotion: string;
     tone: string;
     vector: number[];
+    emotionIntensity: number;
+    contextWeight: number;
+    retentionTTL: number;
     timestamp: Date;
   }) {
     if (!this.client) {
@@ -230,6 +248,9 @@ class VectorDBService {
           userId: data.userId,
           emotion: data.emotion,
           tone: data.tone,
+          emotionIntensity: data.emotionIntensity,
+          contextWeight: data.contextWeight,
+          retentionTTL: data.retentionTTL,
           timestamp: data.timestamp.toISOString(),
         })
         .withVector(data.vector)
@@ -257,7 +278,7 @@ class VectorDBService {
         .get()
         .withClassName("MemoryMoment")
         .withFields(
-          "content userId emotion tone timestamp _additional { distance certainty }"
+          "content userId emotion tone emotionIntensity contextWeight retentionTTL timestamp _additional { distance certainty }"
         )
         .withNearVector({ vector })
         .withWhere({
@@ -290,7 +311,7 @@ class VectorDBService {
         .get()
         .withClassName("MemoryMoment")
         .withFields(
-          "content userId emotion tone timestamp _additional { certainty }"
+          "content userId emotion tone emotionIntensity contextWeight retentionTTL timestamp _additional { certainty }"
         )
         .withWhere({
           operator: "And",

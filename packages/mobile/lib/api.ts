@@ -373,3 +373,111 @@ export const syncSianiData = async (data: {
 
   return results;
 };
+
+/**
+ * Transcribe audio file
+ * POST /api/voice/transcribe
+ */
+export const transcribeAudio = async (
+  audioUri: string
+): Promise<{
+  text: string;
+  language?: string;
+  duration?: number;
+  source?: string;
+}> => {
+  const token = await getToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  const formData = new FormData();
+  formData.append("audio", {
+    uri: audioUri,
+    type: "audio/m4a",
+    name: "recording.m4a",
+  } as any);
+
+  console.log(`[API] POST /api/voice/transcribe`);
+
+  const response = await fetch(`${API_URL}/api/voice/transcribe`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Transcription failed");
+  }
+
+  console.log(`[API] ✅ Transcription succeeded (source: ${data.source})`);
+  return data;
+};
+
+/**
+ * Analyze audio with full voice pipeline
+ * POST /api/voice/analyze
+ */
+export const analyzeVoice = async (
+  audioUri: string
+): Promise<{
+  transcription: string;
+  emotion: string;
+  intent?: string;
+  sdohFlags: string[];
+  memoryMomentId: string;
+  needsIntervention: boolean;
+  sianiResponse?: string;
+}> => {
+  const token = await getToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  const formData = new FormData();
+  formData.append("audio", {
+    uri: audioUri,
+    type: "audio/m4a",
+    name: "recording.m4a",
+  } as any);
+
+  console.log(`[API] POST /api/voice/analyze`);
+
+  const response = await fetch(`${API_URL}/api/voice/analyze`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Voice analysis failed");
+  }
+
+  console.log(`[API] ✅ Voice analysis succeeded (emotion: ${data.emotion})`);
+  return data;
+};
+
+/**
+ * Check transcription service health
+ * GET /api/voice/health
+ */
+export const checkTranscriptionHealth = async (): Promise<{
+  healthy: boolean;
+  strategy: string;
+  services: {
+    openai: boolean;
+    local: boolean;
+  };
+}> => {
+  return await fetchAPI("/api/voice/health");
+};
