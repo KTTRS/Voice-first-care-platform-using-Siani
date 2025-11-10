@@ -1,13 +1,34 @@
-# Sainte Mobile App
+# Siani Mobile App
 
 React Native mobile application built with Expo for the Voice-First Care Platform.
 
-## Features
+## ✨ Key Features
 
+### 🎙️ Voice-First Conversational Interface
+- **Natural voice conversations** with Siani, your AI companion
+- **Real-time audio recording** with expo-av
+- **Text-to-speech responses** for immersive experience
+- **Waveform visualization** showing audio activity
+- **Breathing avatar** that feels alive and responsive
+- See [VOICE_QUICKSTART.md](./VOICE_QUICKSTART.md) for detailed voice features
+
+### 🧠 Emotional Intelligence
+- **SDOH Detection**: Passively detects social determinants of health from conversation
+- **Mood Tracking**: Recognizes 13 emotional states
+- **Memory System**: Remembers context and builds rapport over time
+- **Resource Intelligence**: Offers help naturally, never pushy
+
+### 🎨 Luxury "Old Money" Design
+- Warm off-white backgrounds (#F9F7F4)
+- Subtle gold accents (#DAA520)
+- Breathing animations and haptic feedback
+- Timeless, elegant, non-clinical aesthetic
+
+### 📱 Core App Features
 - **Goals Management**: View and track personal health goals
-- **Activity Feed**: Real-time community activity feed with events
+- **Activity Feed**: Real-time memory moments and events
 - **Streak Tracking**: Monitor consecutive activity streaks
-- **Token Authentication**: Secure API communication with test-token auth
+- **Token Authentication**: Secure API communication
 
 ## Tech Stack
 
@@ -17,6 +38,10 @@ React Native mobile application built with Expo for the Voice-First Care Platfor
 - **REST API** integration with backend
 
 ## Setup
+
+### Quick Start
+
+For a complete guide to voice capture features, see **[VOICE_QUICKSTART.md](./VOICE_QUICKSTART.md)**.
 
 1. Install dependencies:
 
@@ -85,13 +110,21 @@ All requests include `Authorization: Bearer test-token` header for authenticatio
 
 ## Available Screens
 
-### Home Screen
-
+### 🏠 Home Screen
 - Platform overview
-- Navigation to Goals and Feed
-- Feature highlights
+- Navigation to all features
+- Breathing Siani avatar
+- Quick access to conversation
 
-### Goals Screen
+### 🎙️ Conversation Screen (Voice-First)
+- Full-screen voice interaction
+- Tap avatar to record your voice
+- Real-time waveform visualization
+- Text-to-speech responses from Siani
+- Message history with luxury styling
+- SDOH detection and resource offering
+
+### 🎯 Goals Screen
 
 - List of all goals with pagination
 - Pull-to-refresh functionality
@@ -99,8 +132,9 @@ All requests include `Authorization: Bearer test-token` header for authenticatio
 - Points and creation date display
 - Loading and error states
 
-### Feed Screen
+### 📰 Feed Screen
 
+- Memory moments from conversations
 - Community activity feed with event types:
   - 🎯 GOAL_CREATED
   - 🏆 GOAL_COMPLETED
