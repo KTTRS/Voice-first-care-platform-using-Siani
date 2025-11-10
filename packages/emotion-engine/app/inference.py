@@ -16,6 +16,7 @@ import numpy as np
 import tempfile
 import os
 from typing import Dict, Any
+from app.emotion_blend import process_emotion_logits
 
 # Model configuration
 AUDIO_MODEL = "facebook/wav2vec2-base"

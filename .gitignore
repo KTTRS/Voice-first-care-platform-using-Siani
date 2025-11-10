@@ -150,3 +150,6 @@ packages/mobile/dist
 # Database
 *.db
 *.sqlite
+# Python cache
+__pycache__/
+*.pyc
