@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate } from "../utils/auth";
+import { authenticate } from "../middleware/authenticate";
 import { streakService } from "../services/streak.service";
 import { triggerStreakCheckNow } from "../jobs/schedulers/dailyStreakCheck";
 import prisma from "../utils/db";

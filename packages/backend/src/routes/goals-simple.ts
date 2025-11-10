@@ -8,7 +8,7 @@ import {
   updateGoal,
 } from "../services/goal.service";
 import { handlePrismaError } from "../utils/prismaError";
-import { authenticate } from "../utils/auth";
+import { authenticate } from "../middleware/authenticate";
 import {
   createGoalSchema,
   updateGoalSchema,
