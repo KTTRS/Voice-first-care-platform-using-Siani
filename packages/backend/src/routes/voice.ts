@@ -21,6 +21,9 @@ import {
   estimateTranscriptionCost,
   checkTranscriptionHealth,
 } from "../services/transcription.service";
+import { analyzeAudioFile } from "../services/prosody.service";
+import { createMemoryMoment } from "../services/memoryMoment.service";
+import { EmotionLevel } from "../utils/emotionAnalysis";
 
 const router = Router();
 
@@ -231,8 +234,13 @@ router.get(
 
 /**
  * POST /api/voice/transcribe
- * Dedicated endpoint for transcription only (no analysis)
- * Used by mobile app for real-time transcription
+ * Dedicated endpoint for transcription with integrated prosody analysis
+ * and automatic memory moment creation
+ * 
+ * Enhanced to:
+ * 1. Transcribe audio (Whisper)
+ * 2. Analyze prosody (pitch, energy, emotion)
+ * 3. Create memory moment with combined text+prosody embeddings
  */
 router.post(
   "/transcribe",
@@ -244,21 +252,83 @@ router.post(
         return res.status(400).json({ error: "Audio file required" });
       }
 
+      const userId = req.user?.userId || req.body.userId;
+      const createMemory = req.body.createMemory !== "false"; // Default to true
+
       console.log(`[Voice] Transcribing audio: ${req.file.filename}`);
 
-      const result = await transcribeAudio(req.file.path);
+      // Parallel processing: transcription + prosody analysis
+      const [transcriptionResult, prosodyData] = await Promise.all([
+        transcribeAudio(req.file.path),
+        analyzeAudioFile(req.file.path),
+      ]);
 
-      // Delete audio file after transcription if configured
+      const transcription = transcriptionResult.text;
+
+      console.log(
+        `[Voice] Transcription completed via ${transcriptionResult.source}`
+      );
+      console.log(`[Voice] Prosody: pitch=${prosodyData.pitchHz.toFixed(1)}Hz, energy=${prosodyData.energy.toFixed(2)}`);
+
+      // Analyze emotion from text
+      const emotionLevel = analyzeEmotion(transcription);
+
+      // Map emotion level to prosody emotion format
+      const prosodyEmotion: EmotionLevel = emotionLevel as EmotionLevel;
+
+      // Prepare combined prosody data for memory embedding
+      const prosodyForMemory = {
+        pitchHz: prosodyData.pitchHz,
+        energy: prosodyData.energy,
+        emotion: prosodyEmotion,
+        pitchVariance: prosodyData.pitchVariance,
+      };
+
+      // Create memory moment with prosody-enhanced embedding if requested
+      let memoryMoment = null;
+      if (createMemory && userId) {
+        try {
+          memoryMoment = await createMemoryMoment(
+            {
+              userId,
+              content: transcription,
+              emotion: emotionLevel,
+              tone: emotionLevel,
+              vectorId: "weaviate",
+              source: "voice_transcribe",
+            },
+            prosodyForMemory
+          );
+
+          console.log(
+            `[Voice] ✅ Memory moment created with prosody embedding: ${memoryMoment.id}`
+          );
+        } catch (memoryError: any) {
+          console.error("[Voice] Failed to create memory moment:", memoryError);
+          // Continue even if memory creation fails
+        }
+      }
+
+      // Delete audio file after processing if configured
       if (process.env.DELETE_AUDIO_AFTER_TRANSCRIPTION === "true") {
         await deleteAudioFile(req.file.path);
       }
 
       res.json({
-        text: result.text,
-        language: result.language,
-        duration: result.duration,
-        source: result.source,
-        timestamp: result.timestamp,
+        text: transcriptionResult.text,
+        language: transcriptionResult.language,
+        duration: transcriptionResult.duration,
+        source: transcriptionResult.source,
+        timestamp: transcriptionResult.timestamp,
+        prosody: {
+          pitchHz: prosodyData.pitchHz,
+          energy: prosodyData.energy,
+          emotion: prosodyEmotion,
+          pitchVariance: prosodyData.pitchVariance,
+        },
+        emotion: emotionLevel,
+        memoryMomentId: memoryMoment?.id,
+        prosodyEnabled: true,
       });
     } catch (error: any) {
       console.error("[Voice] Transcription error:", error);

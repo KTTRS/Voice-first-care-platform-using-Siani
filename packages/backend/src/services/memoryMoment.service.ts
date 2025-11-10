@@ -7,6 +7,7 @@ import {
   ProsodyData,
 } from "./prosodyEmbedding.service";
 import { EmotionLevel } from "../utils/emotionAnalysis";
+import { reinforceMemory } from "./memoryLifecycle.service";
 
 export async function listMemoryMoments(params?: {
   skip?: number;
@@ -104,7 +105,8 @@ export async function searchMemoryMoments(
   query: string,
   userId: string,
   limit: number = 10,
-  prosodyData?: ProsodyData
+  prosodyData?: ProsodyData,
+  reinforceResults: boolean = true
 ): Promise<any[]> {
   try {
     // Generate text embedding for the search query
@@ -160,8 +162,22 @@ export async function searchMemoryMoments(
     rankedResults.sort((a: any, b: any) => b.score - a.score);
     const topResults = rankedResults.slice(0, limit);
 
+    // Reinforce recalled memories (memory consolidation)
+    if (reinforceResults && topResults.length > 0) {
+      // Reinforce top result more strongly, others less so
+      for (let i = 0; i < Math.min(topResults.length, 3); i++) {
+        const result = topResults[i];
+        const boostFactor = i === 0 ? 0.05 : i === 1 ? 0.03 : 0.01;
+        
+        // Reinforce asynchronously (don't wait)
+        reinforceMemory(result.id, boostFactor).catch((error) => {
+          console.warn(`Failed to reinforce memory ${result.id}:`, error);
+        });
+      }
+    }
+
     console.log(
-      `🔍 Found ${topResults.length} memory moments (emotion-weighted scoring)`
+      `🔍 Found ${topResults.length} memory moments (emotion-weighted scoring${reinforceResults ? ', reinforced' : ''})`
     );
     return topResults;
   } catch (error) {

@@ -8,6 +8,11 @@ import {
   updateMemoryMoment,
   searchMemoryMoments,
 } from "../services/memoryMoment.service";
+import {
+  applyMemoryDecay,
+  cleanupExpiredMemories,
+  getMemoryLifecycleStats,
+} from "../services/memoryLifecycle.service";
 import { handlePrismaError } from "../utils/prismaError";
 import { authenticate } from "../utils/auth";
 import { getPaginationParams } from "../utils/pagination";
@@ -220,6 +225,71 @@ router.delete("/:id", async (req, res, next) => {
     res.json(removed);
   } catch (error) {
     return handlePrismaError(error, res, next, "MemoryMoment not found");
+  }
+});
+
+// Memory Lifecycle Management Endpoints
+
+/**
+ * GET /api/memory-moments/lifecycle/stats
+ * Get memory lifecycle statistics
+ */
+router.get("/lifecycle/stats", async (req, res, next) => {
+  try {
+    const stats = await getMemoryLifecycleStats();
+    res.json(stats);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/memory-moments/lifecycle/decay
+ * Apply memory decay to old memories
+ */
+router.post("/lifecycle/decay", async (req, res, next) => {
+  try {
+    const dryRun = req.body.dryRun !== false; // Default to dry run for safety
+    const decayedCount = await applyMemoryDecay(dryRun);
+    
+    res.json({
+      success: true,
+      decayedCount,
+      dryRun,
+      message: dryRun
+        ? `${decayedCount} memories would be decayed (dry run)`
+        : `${decayedCount} memories were decayed`,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/memory-moments/lifecycle/cleanup
+ * Clean up expired memories
+ */
+router.post("/lifecycle/cleanup", async (req, res, next) => {
+  try {
+    const dryRun = req.body.dryRun !== false; // Default to dry run for safety
+    const gracePeriodMultiplier = req.body.gracePeriodMultiplier || 2.0;
+    
+    const deletedCount = await cleanupExpiredMemories(
+      gracePeriodMultiplier,
+      dryRun
+    );
+    
+    res.json({
+      success: true,
+      deletedCount,
+      dryRun,
+      gracePeriodMultiplier,
+      message: dryRun
+        ? `${deletedCount} memories would be deleted (dry run)`
+        : `${deletedCount} memories were deleted`,
+    });
+  } catch (error) {
+    next(error);
   }
 });
 

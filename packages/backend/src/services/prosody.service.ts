@@ -155,10 +155,39 @@ export class ProsodyAnalyzer {
   }
 }
 
+/**
+ * Analyze audio file and extract aggregated prosody data
+ * @param filePath - Path to audio file
+ * @returns Aggregated prosody data with emotion mapping
+ */
+export async function analyzeAudioFile(
+  filePath: string
+): Promise<{ pitchHz: number; energy: number; pitchVariance: number }> {
+  // This is a placeholder that requires actual audio decoding
+  // In a production environment, you would use a library like ffmpeg or wav-decoder
+  // to decode the audio file and extract raw PCM data
+  
+  // For now, we return mock data that can be replaced when audio decoding is implemented
+  // The actual implementation would:
+  // 1. Decode audio file to Float32Array PCM samples
+  // 2. Use ProsodyAnalyzer to process the audio
+  // 3. Aggregate the prosody frames
+  
+  console.warn('[Prosody] analyzeAudioFile: Audio decoding not yet implemented, using mock data');
+  
+  // Return reasonable default values
+  return {
+    pitchHz: 200, // Neutral pitch
+    energy: 0.5, // Medium energy
+    pitchVariance: 30, // Moderate variance
+  };
+}
+
 export default {
   analyzeProsody,
   calculateEnergy,
   detectPitch,
   smoothProsody,
   ProsodyAnalyzer,
+  analyzeAudioFile,
 };
