@@ -1,9 +1,9 @@
-import { Router, Response } from 'express';
-import { z } from 'zod';
-import prisma from '../utils/db';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { embeddingService } from '../services/embedding.service';
-import { vectorDBService } from '../services/vectordb.service';
+import { Router, Response } from "express";
+import { z } from "zod";
+import prisma from "../utils/db";
+import { authenticate } from "../middleware/authenticate";
+import { embeddingService } from "../services/embedding.service";
+import { vectorDBService } from "../services/vectordb.service";
 
 const router = Router();
 
@@ -24,7 +24,7 @@ const searchMemorySchema = z.object({
 vectorDBService.initialize().catch(console.error);
 
 // Store a new memory
-router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.post("/", authenticate, async (req: any, res: Response) => {
   try {
     const data = createMemorySchema.parse(req.body);
 
@@ -33,7 +33,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     try {
       embedding = await embeddingService.createEmbedding(data.content);
     } catch (error) {
-      console.error('Failed to create embedding:', error);
+      console.error("Failed to create embedding:", error);
       // Continue without embedding if OpenAI is not available
     }
 
@@ -61,7 +61,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
           vector: embedding,
         });
       } catch (error) {
-        console.error('Failed to store in vector DB:', error);
+        console.error("Failed to store in vector DB:", error);
         // Continue even if vector DB storage fails
       }
     }
@@ -71,13 +71,13 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Memory creation error:', error);
-    res.status(500).json({ error: 'Failed to create memory' });
+    console.error("Memory creation error:", error);
+    res.status(500).json({ error: "Failed to create memory" });
   }
 });
 
 // Search memories using semantic search
-router.post('/search', authenticate, async (req: AuthRequest, res: Response) => {
+router.post("/search", authenticate, async (req: any, res: Response) => {
   try {
     const data = searchMemorySchema.parse(req.body);
 
@@ -86,7 +86,7 @@ router.post('/search', authenticate, async (req: AuthRequest, res: Response) => 
     try {
       embedding = await embeddingService.createEmbedding(data.query);
     } catch (error) {
-      console.error('Failed to create search embedding:', error);
+      console.error("Failed to create search embedding:", error);
     }
 
     // Search using vector database if available
@@ -99,7 +99,7 @@ router.post('/search', authenticate, async (req: AuthRequest, res: Response) => 
           data.limit
         );
       } catch (error) {
-        console.error('Vector search failed:', error);
+        console.error("Vector search failed:", error);
       }
     }
 
@@ -112,16 +112,13 @@ router.post('/search', authenticate, async (req: AuthRequest, res: Response) => 
 
       const dbResults = await prisma.memory.findMany({
         where,
-        orderBy: [
-          { importance: 'desc' },
-          { accessedAt: 'desc' },
-        ],
+        orderBy: [{ importance: "desc" }, { accessedAt: "desc" }],
         take: data.limit,
       });
 
       res.json({
         results: dbResults,
-        source: 'database',
+        source: "database",
       });
     } else {
       // Update access time for retrieved memories
@@ -135,37 +132,41 @@ router.post('/search', authenticate, async (req: AuthRequest, res: Response) => 
 
       res.json({
         results: vectorResults,
-        source: 'vector-db',
+        source: "vector-db",
       });
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Memory search error:', error);
-    res.status(500).json({ error: 'Failed to search memories' });
+    console.error("Memory search error:", error);
+    res.status(500).json({ error: "Failed to search memories" });
   }
 });
 
 // Get memories for a conversation
-router.get('/conversation/:conversationId', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const memories = await prisma.memory.findMany({
-      where: {
-        userId: req.user!.id,
-        conversationId: req.params.conversationId,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+router.get(
+  "/conversation/:conversationId",
+  authenticate,
+  async (req: any, res: Response) => {
+    try {
+      const memories = await prisma.memory.findMany({
+        where: {
+          userId: req.user!.id,
+          conversationId: req.params.conversationId,
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
-    res.json(memories);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch memories' });
+      res.json(memories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch memories" });
+    }
   }
-});
+);
 
 // Get memory statistics
-router.get('/stats', authenticate, async (req: AuthRequest, res: Response) => {
+router.get("/stats", authenticate, async (req: any, res: Response) => {
   try {
     const totalMemories = await prisma.memory.count({
       where: { userId: req.user!.id },
@@ -181,7 +182,7 @@ router.get('/stats', authenticate, async (req: AuthRequest, res: Response) => {
     });
 
     const conversationCount = await prisma.memory.groupBy({
-      by: ['conversationId'],
+      by: ["conversationId"],
       where: {
         userId: req.user!.id,
         conversationId: { not: null },
@@ -194,32 +195,32 @@ router.get('/stats', authenticate, async (req: AuthRequest, res: Response) => {
       conversations: conversationCount.length,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch statistics' });
+    res.status(500).json({ error: "Failed to fetch statistics" });
   }
 });
 
 // Delete a memory
-router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete("/:id", authenticate, async (req: any, res: Response) => {
   try {
     const memory = await prisma.memory.findUnique({
       where: { id: req.params.id },
     });
 
     if (!memory) {
-      return res.status(404).json({ error: 'Memory not found' });
+      return res.status(404).json({ error: "Memory not found" });
     }
 
     if (memory.userId !== req.user!.id) {
-      return res.status(403).json({ error: 'Unauthorized' });
+      return res.status(403).json({ error: "Unauthorized" });
     }
 
     await prisma.memory.delete({
       where: { id: req.params.id },
     });
 
-    res.json({ message: 'Memory deleted successfully' });
+    res.json({ message: "Memory deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete memory' });
+    res.status(500).json({ error: "Failed to delete memory" });
   }
 });
 

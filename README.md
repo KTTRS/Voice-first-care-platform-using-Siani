@@ -5,6 +5,7 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 ## 🌟 Features
 
 ### Core Capabilities
+
 - **Voice-First Interface**: Natural language interactions for patient care
 - **AI-Powered Memory**: Context-aware conversations using OpenAI embeddings and vector database
 - **Signal Scoring Engine**: Intelligent health signal analysis and prioritization
@@ -15,6 +16,7 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 ### Technology Stack
 
 #### Backend (Node.js + TypeScript)
+
 - **Framework**: Express.js for RESTful API
 - **ORM**: Prisma with PostgreSQL database
 - **Authentication**: JWT-based with bcrypt password hashing
@@ -23,12 +25,14 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 - **Validation**: Zod for type-safe request validation
 
 #### Dashboard (Next.js)
+
 - **Framework**: Next.js 14 with App Router
 - **Styling**: Tailwind CSS
 - **UI**: React 18 with TypeScript
 - **API Client**: Axios for backend communication
 
 #### Mobile App (React Native + Expo)
+
 - **Framework**: Expo with React Native
 - **Navigation**: Expo Router
 - **Storage**: AsyncStorage for local data
@@ -37,6 +41,7 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Docker and Docker Compose (for databases)
 - PostgreSQL 15+ (if not using Docker)
@@ -44,6 +49,7 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 - OpenAI API key (optional, for AI features)
 
 ### Option 1: GitHub Codespaces (Recommended)
+
 1. Click "Code" → "Open with Codespaces"
 2. Wait for the environment to set up
 3. Start the services (see Running the Platform below)
@@ -51,34 +57,39 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 ### Option 2: Local Development
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/KTTRS/Voice-first-care-platform-using-Siani.git
    cd Voice-first-care-platform-using-Siani
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Start Docker services**
+
    ```bash
    docker-compose up -d
    ```
+
    This starts PostgreSQL and Weaviate.
 
 4. **Configure environment variables**
+
    ```bash
    # Backend
    cp packages/backend/.env.example packages/backend/.env
-   
+
    # Dashboard
    cp packages/dashboard/.env.example packages/dashboard/.env
-   
+
    # Mobile
    cp packages/mobile/.env.example packages/mobile/.env
    ```
-   
+
    Edit `packages/backend/.env` and add your OpenAI API key if you want AI features.
 
 5. **Set up the database**
@@ -93,12 +104,15 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 ## 🏃 Running the Platform
 
 ### Backend API
+
 ```bash
 npm run dev:backend
 ```
+
 The API will be available at http://localhost:3000
 
 API endpoints:
+
 - `GET /health` - Health check
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
@@ -109,35 +123,57 @@ API endpoints:
 - `POST /api/memory/search` - Search memories (authenticated)
 
 ### Dashboard
+
 ```bash
 npm run dev:dashboard
 ```
+
 The dashboard will be available at http://localhost:3001
 
 ### Mobile App
+
 ```bash
 npm run dev:mobile
 ```
+
+Or use the start script:
+
+```bash
+cd packages/mobile
+./start-mobile.sh
+```
+
 Then:
+
 - Press `i` for iOS simulator
 - Press `a` for Android emulator
 - Scan QR code with Expo Go app on your phone
+
+**Login with test credentials:**
+
+- Email: `john.doe@example.com`
+- Password: `patient123`
+
+📱 See [MOBILE_AUTH_GUIDE.md](MOBILE_AUTH_GUIDE.md) for complete authentication documentation.
 
 ## 👤 Test Credentials
 
 After running the seed script, you can use these credentials:
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@sainte.ai | admin123 |
-| Doctor | doctor@sainte.ai | doctor123 |
-| Nurse | nurse@sainte.ai | nurse123 |
-| Patient | john.doe@example.com | patient123 |
+| Role    | Email                  | Password   |
+| ------- | ---------------------- | ---------- |
+| Admin   | admin@sainte.ai        | admin123   |
+| Doctor  | doctor@sainte.ai       | doctor123  |
+| Nurse   | nurse@sainte.ai        | nurse123   |
+| Patient | john.doe@example.com   | patient123 |
 | Patient | jane.smith@example.com | patient123 |
+
+**Mobile App**: Use `john.doe@example.com` / `patient123` to test the mobile login flow.
 
 ## 📊 Database Schema
 
 ### Users & Roles
+
 - **ADMIN**: Full system access
 - **DOCTOR**: Manage patients, view all data
 - **NURSE**: Assist in patient care
@@ -145,6 +181,7 @@ After running the seed script, you can use these credentials:
 - **CAREGIVER**: Support patient care
 
 ### Core Models
+
 - **User**: Authentication and profile
 - **Patient**: Patient medical information
 - **Signal**: Health signals (vitals, symptoms, etc.)
@@ -154,6 +191,7 @@ After running the seed script, you can use these credentials:
 ## 🔧 Development
 
 ### Project Structure
+
 ```
 sainte-ai-care-platform/
 ├── packages/
@@ -176,6 +214,7 @@ sainte-ai-care-platform/
 ```
 
 ### Building for Production
+
 ```bash
 # Build all packages
 npm run build:all
@@ -191,6 +230,7 @@ npm start
 ```
 
 ## 🧪 Testing
+
 ```bash
 # Run all tests
 npm run test:all
@@ -203,7 +243,7 @@ cd packages/mobile && npm test
 
 ## 🔒 Security Features
 
-- **JWT Authentication**: Secure token-based authentication
+- **JWT Authentication**: ✅ **Complete** - Secure token-based authentication for all endpoints
 - **Password Hashing**: bcrypt for password security
 - **Role-Based Access**: Granular permissions by user role
 - **CORS Protection**: Configured cross-origin resource sharing
@@ -211,7 +251,19 @@ cd packages/mobile && npm test
 - **Input Validation**: Zod schema validation for all inputs
 - **SQL Injection Protection**: Parameterized queries via Prisma
 
+### JWT Authentication Status: ✅ PRODUCTION READY
+
+All protected API endpoints now use JWT authentication:
+- ✅ Goals, Feed, Streaks, Daily Actions
+- ✅ Signals, Memory, Referrals, Patients
+- ✅ Mobile app fully integrated with JWT
+- ✅ Token persistence and automatic renewal
+- ✅ Secure logout and session management
+
+📄 See [JWT_IMPLEMENTATION_COMPLETE.md](JWT_IMPLEMENTATION_COMPLETE.md) for detailed implementation status.
+
 ⚠️ **Production Security Checklist**:
+
 - [ ] Enable rate limiting (see `SECURITY.md`)
 - [ ] Configure HTTPS/SSL
 - [ ] Set strong JWT secrets
@@ -225,12 +277,14 @@ See `SECURITY.md` for detailed security analysis and recommendations.
 ## 🤖 AI Features
 
 ### Memory Module
+
 - **OpenAI Embeddings**: Converts text to semantic vectors
 - **Weaviate Vector DB**: Fast similarity search
 - **Context Retention**: Remembers patient preferences and history
 - **Importance Scoring**: Prioritizes relevant memories
 
 ### Signal Scoring Engine
+
 - **Automated Severity Assessment**: Analyzes health signals
 - **Priority Scoring**: 0-100 scale for urgency
 - **Multi-Factor Analysis**: Considers type, value, metadata
@@ -239,7 +293,9 @@ See `SECURITY.md` for detailed security analysis and recommendations.
 ## 📝 API Documentation
 
 ### Authentication
+
 All protected endpoints require a Bearer token in the Authorization header:
+
 ```
 Authorization: Bearer <your-jwt-token>
 ```
@@ -247,6 +303,7 @@ Authorization: Bearer <your-jwt-token>
 ### Example Requests
 
 **Register User**
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -260,6 +317,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 ```
 
 **Create Health Signal**
+
 ```bash
 curl -X POST http://localhost:3000/api/signals \
   -H "Authorization: Bearer <token>" \
@@ -278,6 +336,7 @@ curl -X POST http://localhost:3000/api/signals \
 ## 🌐 Environment Variables
 
 ### Backend (.env)
+
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/sainte_db"
 JWT_SECRET="your-secret-key"
@@ -288,11 +347,13 @@ WEAVIATE_URL="http://localhost:8080"
 ```
 
 ### Dashboard (.env)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
 ### Mobile (.env)
+
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:3000
 ```

@@ -64,6 +64,7 @@ model User {
   dailyActions      DailyAction[]
   referralLoops     ReferralLoop[]
   signalEvents      SignalEvent[]
+  feedEvents        FeedEvent[]
 
   @@map("users")
 }
@@ -185,6 +186,7 @@ model Goal {
   createdAt DateTime @default(now())
 
   dailyActions DailyAction[]
+  feedEvents   FeedEvent[]
 
   @@map("goals")
 }
@@ -224,4 +226,21 @@ model SignalEvent {
   createdAt DateTime @default(now())
 
   @@map("signal_events")
+}
+
+model FeedEvent {
+  id        String   @id @default(cuid())
+  type      String   // GOAL_CREATED, GOAL_COMPLETED, DAILY_ACTION_COMPLETED, etc.
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalId    String?  // Optional reference for goal-related events
+  goal      Goal?    @relation(fields: [goalId], references: [id])
+  message   String   // Human-readable text for frontend
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("feed_events")
 }
