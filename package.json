@@ -1,19 +1,9 @@
 {
-  "name": "sainte-ai-care-platform",
-  "version": "1.0.0",
-  "description": "Full-stack AI care platform with voice-first interface",
+  "name": "voice-first-care-platform",
   "private": true,
   "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "dev:backend": "npm run dev --workspace=backend",
-    "dev:dashboard": "npm run dev --workspace=dashboard",
-    "dev:mobile": "npm run dev --workspace=mobile",
-    "build:all": "npm run build --workspaces",
-    "test:all": "npm run test --workspaces"
-  },
-  "keywords": ["ai", "healthcare", "voice", "care-platform"],
-  "author": "",
-  "license": "MIT"
+    "packages/backend",
+    "packages/dashboard",
+    "packages/mobile"
+  ]
 }
