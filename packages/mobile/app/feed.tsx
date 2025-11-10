@@ -7,8 +7,17 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Animated,
+  Platform,
 } from "react-native";
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from "@expo-google-fonts/inter";
 import { getFeed } from "../lib/api";
+import { colors, spacing, typography, shadows } from "../theme/luxury";
 
 interface FeedEvent {
   id: string;
@@ -46,10 +55,17 @@ const getEventColor = (type: string): string => {
 };
 
 export default function FeedScreen() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+  });
+
   const [feed, setFeed] = useState<FeedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   const loadFeed = async () => {
     try {
@@ -67,6 +83,12 @@ export default function FeedScreen() {
 
   useEffect(() => {
     loadFeed();
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   const onRefresh = () => {
@@ -89,10 +111,10 @@ export default function FeedScreen() {
     return date.toLocaleDateString();
   };
 
-  if (loading) {
+  if (!fontsLoaded || loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0a7ea4" />
+        <ActivityIndicator size="large" color={colors.accent.gold} />
         <Text style={styles.loadingText}>Loading feed...</Text>
       </View>
     );
@@ -110,18 +132,26 @@ export default function FeedScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Community Feed</Text>
-      <Text style={styles.subtitle}>
-        {feed.length} recent {feed.length === 1 ? "activity" : "activities"}
-      </Text>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      {/* Luxury Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Your Journey</Text>
+        <Text style={styles.subtitle}>
+          {feed.length} {feed.length === 1 ? "moment" : "moments"}
+        </Text>
+      </View>
 
       <FlatList
         data={feed}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent.gold}
+          />
         }
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <View style={styles.feedCard}>
             <View style={styles.feedHeader}>
@@ -151,7 +181,7 @@ export default function FeedScreen() {
               </View>
             </View>
           </View>
-        )}
+        ))}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No activities yet!</Text>
@@ -159,69 +189,81 @@ export default function FeedScreen() {
               Start completing goals to see your feed
             </Text>
           </View>
-        }
+        )}
       />
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
+  },
+  header: {
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#333",
+    fontSize: typography.sizes.xxl,
+    fontFamily: typography.fonts.semibold,
+    color: colors.text.primary,
+    letterSpacing: typography.letterSpacing.tight,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 20,
+    fontSize: typography.sizes.sm,
+    fontFamily: typography.fonts.regular,
+    color: colors.text.tertiary,
+    marginTop: 4,
+    letterSpacing: typography.letterSpacing.wide,
+    textTransform: "uppercase",
+  },
+  listContent: {
+    padding: spacing.lg,
   },
   feedCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    ...shadows.md,
   },
   feedHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   iconEmoji: {
-    fontSize: 20,
+    fontSize: 22,
   },
   feedContent: {
     flex: 1,
   },
   feedMessage: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 8,
-    lineHeight: 22,
+    fontSize: typography.sizes.base,
+    fontFamily: typography.fonts.regular,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+    lineHeight: 24,
   },
   feedFooter: {
     flexDirection: "row",
@@ -229,49 +271,57 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   feedType: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: typography.sizes.xs,
+    fontFamily: typography.fonts.semibold,
     textTransform: "uppercase",
+    letterSpacing: typography.letterSpacing.wide,
   },
   feedTime: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: typography.sizes.xs,
+    fontFamily: typography.fonts.regular,
+    color: colors.text.disabled,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
+    marginTop: spacing.md,
+    fontSize: typography.sizes.base,
+    fontFamily: typography.fonts.regular,
+    color: colors.text.secondary,
   },
   errorText: {
-    fontSize: 16,
-    color: "#f44336",
+    fontSize: typography.sizes.base,
+    fontFamily: typography.fonts.medium,
+    color: colors.semantic.error,
     textAlign: "center",
-    marginBottom: 20,
-    paddingHorizontal: 20,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xl,
   },
   retryButton: {
-    backgroundColor: "#0a7ea4",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: colors.text.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    ...shadows.md,
   },
   retryButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.background,
+    fontSize: typography.sizes.base,
+    fontFamily: typography.fonts.semibold,
   },
   emptyContainer: {
     alignItems: "center",
-    marginTop: 60,
+    marginTop: spacing.xxxl * 2,
+    paddingHorizontal: spacing.xl,
   },
   emptyText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#666",
-    marginBottom: 8,
+    fontSize: typography.sizes.xl,
+    fontFamily: typography.fonts.semibold,
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: "#999",
+    fontSize: typography.sizes.sm,
+    fontFamily: typography.fonts.regular,
+    color: colors.text.tertiary,
+    textAlign: "center",
   },
 });

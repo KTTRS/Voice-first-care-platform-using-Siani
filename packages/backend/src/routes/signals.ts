@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "../utils/db";
 import { authenticate } from "../utils/auth";
 import { signalScoringEngine } from "../services/scoring.service";
+import { triggerSignalUpdate } from "../jobs/queues/signalQueue";
 
 const router = Router();
 
@@ -140,9 +141,13 @@ router.post("/", authenticate, async (req: any, res: Response) => {
       },
     });
 
+    // Queue signal score update asynchronously for the patient
+    await triggerSignalUpdate(data.patientId, `new_signal:${data.type}`);
+
     res.status(201).json({
       signal,
       interpretation: signalScoringEngine.getScoreInterpretation(score),
+      queuedForAnalysis: true,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

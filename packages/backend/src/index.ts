@@ -6,6 +6,7 @@ import fs from "fs";
 import { authRouter } from "./routes/auth";
 import { patientRouter } from "./routes/patients";
 import { signalRouter } from "./routes/signals";
+import { signalRouter as signalScoreRouter } from "./routes/signalScores";
 import { referralRouter } from "./routes/referrals";
 import { memoryRouter } from "./routes/memory";
 import { errorHandler } from "./middleware/errorHandler";
@@ -18,9 +19,16 @@ import signalEventsRouter from "./routes/signalEvents";
 import webhooksRouter from "./routes/webhooks";
 import feedRouter from "./routes/feed";
 import streaksRouter from "./routes/streaks";
+import sdohRouter from "./routes/sdoh";
+import resourceEngagementsRouter from "./routes/resourceEngagements";
+import messagesRouter from "./routes/messages";
+import voiceRouter from "./routes/voice";
 import { scheduleDailyCheckins } from "./jobs/schedulers/dailyCheckins";
 import { scheduleDailyStreakCheck } from "./jobs/schedulers/dailyStreakCheck";
+import { scheduleDailySignalUpdate } from "./jobs/schedulers/dailySignalUpdate";
+import { scheduleResourceFollowUps } from "./jobs/schedulers/resourceFollowUp";
 import "./jobs/workers/feed.worker"; // Initialize feed worker
+import "./jobs/workers/signal.worker"; // Initialize signal worker
 import { initializeWebSocket } from "./services/websocket.service";
 
 const app: Application = express();
@@ -60,9 +68,14 @@ app.post("/webhook", express.json(), (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/patients", patientRouter);
 app.use("/api/signals", signalRouter);
+app.use("/api/signal-scores", signalScoreRouter); // New signal intelligence routes
 app.use("/api/referrals", referralRouter);
 app.use("/api/memory", memoryRouter);
 app.use("/api/users", userRouter);
+app.use("/api/users", sdohRouter); // SDOH + Resource Intelligence routes (nested under /api/users/:id/...)
+app.use("/api/resource-engagements", resourceEngagementsRouter); // Resource engagement API
+app.use("/api/messages", messagesRouter); // Message processing with SDOH detection
+app.use("/api/voice", voiceRouter); // Voice analysis and transcription
 app.use("/api/memory-moments", memoryMomentsRouter);
 app.use("/api/goals", goalsRouter);
 app.use("/api/daily-actions", dailyActionsRouter);
@@ -74,6 +87,8 @@ app.use("/api/streaks", streaksRouter);
 
 // scheduleDailyCheckins(); // Temporarily disabled
 scheduleDailyStreakCheck(); // Enable daily streak tracking
+scheduleDailySignalUpdate(); // Enable daily signal score updates
+scheduleResourceFollowUps(); // Enable resource engagement follow-ups
 
 // Error handling
 app.use(errorHandler);
