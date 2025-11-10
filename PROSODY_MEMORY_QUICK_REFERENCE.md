@@ -6,7 +6,7 @@
 
 ## Core Concept
 
-```
+```text
 Traditional:  Text → Embedding (1536d) → Weaviate
 Enhanced:     Text + Prosody → Combined Embedding (1540d) → Weaviate
               ↓

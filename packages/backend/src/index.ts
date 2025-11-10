@@ -26,6 +26,7 @@ import voiceRouter from "./routes/voice";
 import ttsRouter from "./routes/tts.routes";
 import { initProsodyWebSocket } from "./routes/prosody.routes";
 import { initTTSService } from "./routes/tts.routes";
+import emotionClassifierRouter from "./routes/emotionClassifier.routes";
 import { scheduleDailyCheckins } from "./jobs/schedulers/dailyCheckins";
 import { scheduleDailyStreakCheck } from "./jobs/schedulers/dailyStreakCheck";
 import { scheduleDailySignalUpdate } from "./jobs/schedulers/dailySignalUpdate";
@@ -80,6 +81,7 @@ app.use("/api/resource-engagements", resourceEngagementsRouter); // Resource eng
 app.use("/api/messages", messagesRouter); // Message processing with SDOH detection
 app.use("/api/voice", voiceRouter); // Voice analysis and transcription
 app.use("/api/tts", ttsRouter); // Text-to-speech with prosody
+app.use("/api/emotion", emotionClassifierRouter); // Emotion classification (Calm, Guarded, Lit)
 app.use("/api/memory-moments", memoryMomentsRouter);
 app.use("/api/goals", goalsRouter);
 app.use("/api/daily-actions", dailyActionsRouter);

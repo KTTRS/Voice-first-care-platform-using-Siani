@@ -361,7 +361,7 @@ Connect `/prosody` WebSocket stream to `/api/transcribe` endpoint for automatic 
 
 **Flow**:
 
-```
+```text
 User speaks → Audio recording
   ├─→ Whisper transcription (/api/transcribe)
   └─→ Prosody analysis (/prosody WebSocket)

@@ -1,0 +1,21 @@
+# Core ML framework
+torch==2.2.0
+torchaudio==2.2.0
+transformers==4.39.0
+
+# Sentence transformers
+sentence-transformers==2.5.1
+
+# Numerical computing
+numpy==1.26.4
+
+# FastAPI
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+
+# Validation
+pydantic==2.6.3
+
+# Optional: ONNX Runtime (for faster inference)
+# onnxruntime==1.17.1
