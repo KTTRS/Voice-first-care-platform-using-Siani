@@ -27,6 +27,8 @@ import ttsRouter from "./routes/tts.routes";
 import { initProsodyWebSocket } from "./routes/prosody.routes";
 import { initTTSService } from "./routes/tts.routes";
 import emotionClassifierRouter from "./routes/emotionClassifier.routes";
+import relationalMemoryRouter from "./routes/relationalMemory.routes";
+import sianiIntelligenceRouter from "./routes/sianiIntelligence.routes";
 import { scheduleDailyCheckins } from "./jobs/schedulers/dailyCheckins";
 import { scheduleDailyStreakCheck } from "./jobs/schedulers/dailyStreakCheck";
 import { scheduleDailySignalUpdate } from "./jobs/schedulers/dailySignalUpdate";
@@ -82,6 +84,8 @@ app.use("/api/messages", messagesRouter); // Message processing with SDOH detect
 app.use("/api/voice", voiceRouter); // Voice analysis and transcription
 app.use("/api/tts", ttsRouter); // Text-to-speech with prosody
 app.use("/api/emotion", emotionClassifierRouter); // Emotion classification (Calm, Guarded, Lit)
+app.use("/api/memory/relational", relationalMemoryRouter); // Relational memory with emotional context
+app.use("/api/siani", sianiIntelligenceRouter); // Integrated intelligence pipeline
 app.use("/api/memory-moments", memoryMomentsRouter);
 app.use("/api/goals", goalsRouter);
 app.use("/api/daily-actions", dailyActionsRouter);
