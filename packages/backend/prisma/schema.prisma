@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,12 +7,252 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  DOCTOR
-  NURSE
-  PATIENT
-  CAREGIVER
+model daily_actions {
+  id        String   @id
+  userId    String
+  goalId    String?
+  content   String
+  points    Int
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  goals     goals?   @relation(fields: [goalId], references: [id])
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model feed_events {
+  id        String   @id
+  type      String
+  userId    String
+  goalId    String?
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  goals     goals?   @relation(fields: [goalId], references: [id])
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([userId])
+}
+
+model goals {
+  id            String          @id
+  userId        String
+  title         String
+  points        Int
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  daily_actions daily_actions[]
+  feed_events   feed_events[]
+  users         users           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model memories {
+  id             String   @id
+  content        String
+  embedding      String?
+  metadata       Json?
+  userId         String
+  conversationId String?
+  importance     Float    @default(0.5)
+  createdAt      DateTime @default(now())
+  accessedAt     DateTime @default(now())
+  users          users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([importance])
+  @@index([userId, conversationId])
+}
+
+model memory_moments {
+  id        String   @id
+  userId    String
+  content   String
+  emotion   String
+  tone      String
+  vectorId  String
+  source    String?  @default("text")
+  metadata  Json?
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model patients {
+  id                                     String      @id
+  userId                                 String      @unique
+  dateOfBirth                            DateTime
+  medicalHistory                         String?
+  allergies                              String?
+  currentMedications                     String?
+  emergencyContact                       String?
+  assignedDoctorId                       String?
+  assignedNurseId                        String?
+  createdAt                              DateTime    @default(now())
+  updatedAt                              DateTime
+  users_patients_assignedDoctorIdTousers users?      @relation("patients_assignedDoctorIdTousers", fields: [assignedDoctorId], references: [id])
+  users_patients_assignedNurseIdTousers  users?      @relation("patients_assignedNurseIdTousers", fields: [assignedNurseId], references: [id])
+  users_patients_userIdTousers           users       @relation("patients_userIdTousers", fields: [userId], references: [id], onDelete: Cascade)
+  referrals                              referrals[]
+  signals                                signals[]
+}
+
+model referral_loops {
+  id        String   @id
+  userId    String
+  resource  String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model referrals {
+  id                                String         @id
+  status                            ReferralStatus @default(PENDING)
+  reason                            String
+  notes                             String?
+  priority                          Int            @default(1)
+  patientId                         String
+  fromUserId                        String
+  toUserId                          String
+  createdAt                         DateTime       @default(now())
+  updatedAt                         DateTime
+  completedAt                       DateTime?
+  users_referrals_fromUserIdTousers users          @relation("referrals_fromUserIdTousers", fields: [fromUserId], references: [id])
+  patients                          patients       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  users_referrals_toUserIdTousers   users          @relation("referrals_toUserIdTousers", fields: [toUserId], references: [id])
+
+  @@index([patientId])
+  @@index([status])
+}
+
+model resource_engagements {
+  id               String    @id
+  userId           String
+  resourceId       String?
+  resourceName     String    @default("")
+  resourceType     String    @default("")
+  needType         String
+  status           String
+  confidence       Float?
+  detectionContext String?
+  detectedAt       DateTime  @default(now())
+  offeredAt        DateTime?
+  acceptedAt       DateTime?
+  declinedAt       DateTime?
+  completedAt      DateTime?
+  failedAt         DateTime?
+  followedUpAt     DateTime?
+  closedAt         DateTime?
+  lastFollowUpAt   DateTime?
+  successRating    Int?
+  impactNotes      String?
+  offeredBy        String?
+  declineReason    String?
+  metadata         Json      @default("{}")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  users            users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([detectedAt])
+  @@index([needType])
+  @@index([status])
+  @@index([userId])
+}
+
+model signal_events {
+  id        String   @id
+  userId    String
+  type      String
+  delta     Float
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model signal_scores {
+  id                  String    @id
+  userId              String
+  medicationAdherence Float     @default(0)
+  mentalHealthRisk    Float     @default(0)
+  socialIsolation     Float     @default(0)
+  careCoordination    Float     @default(0)
+  systemTrust         Float     @default(0)
+  overallRisk         Float     @default(0)
+  trendMedication     Float     @default(0)
+  trendMentalHealth   Float     @default(0)
+  trendSocial         Float     @default(0)
+  totalMoments        Int       @default(0)
+  totalGoalsCompleted Int       @default(0)
+  streakDays          Int       @default(0)
+  lastActivityAt      DateTime?
+  detectedNeeds       String[]  @default([])
+  sdohRisk            Float     @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  users               users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([overallRisk])
+  @@index([userId])
+}
+
+model signals {
+  id           String         @id
+  type         SignalType
+  severity     SignalSeverity @default(LOW)
+  value        String
+  metadata     Json?
+  score        Float          @default(0)
+  patientId    String
+  recordedById String
+  timestamp    DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  patients     patients       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  users        users          @relation(fields: [recordedById], references: [id])
+
+  @@index([patientId, timestamp])
+  @@index([severity])
+}
+
+model users {
+  id                                        String                 @id
+  email                                     String                 @unique
+  password                                  String
+  firstName                                 String
+  lastName                                  String
+  role                                      UserRole               @default(PATIENT)
+  phone                                     String?
+  createdAt                                 DateTime               @default(now())
+  updatedAt                                 DateTime
+  daily_actions                             daily_actions[]
+  feed_events                               feed_events[]
+  goals                                     goals[]
+  memories                                  memories[]
+  memory_moments                            memory_moments[]
+  patients_patients_assignedDoctorIdTousers patients[]             @relation("patients_assignedDoctorIdTousers")
+  patients_patients_assignedNurseIdTousers  patients[]             @relation("patients_assignedNurseIdTousers")
+  patients_patients_userIdTousers           patients?              @relation("patients_userIdTousers")
+  referral_loops                            referral_loops[]
+  referrals_referrals_fromUserIdTousers     referrals[]            @relation("referrals_fromUserIdTousers")
+  referrals_referrals_toUserIdTousers       referrals[]            @relation("referrals_toUserIdTousers")
+  resource_engagements                      resource_engagements[]
+  signal_events                             signal_events[]
+  signal_scores                             signal_scores[]
+  signals                                   signals[]
+}
+
+enum ReferralStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+  CANCELLED
+}
+
+enum SignalSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 enum SignalType {
@@ -26,315 +263,10 @@ enum SignalType {
   ACTIVITY
 }
 
-enum SignalSeverity {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum ReferralStatus {
-  PENDING
-  ACCEPTED
-  COMPLETED
-  CANCELLED
-}
-
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  role      UserRole @default(PATIENT)
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  patientsAsDoctor  Patient[]      @relation("DoctorPatients")
-  patientsAsNurse   Patient[]      @relation("NursePatients")
-  patientProfile    Patient?       @relation("UserPatient")
-  signals           Signal[]
-  referralsCreated  Referral[]     @relation("CreatedReferrals")
-  referralsReceived Referral[]     @relation("ReceivedReferrals")
-  memories          Memory[]
-  memoryMoments     MemoryMoment[]
-  goals             Goal[]
-  dailyActions      DailyAction[]
-  referralLoops     ReferralLoop[]
-  signalEvents      SignalEvent[]
-  feedEvents        FeedEvent[]
-  signalScores      SignalScore[]
-  resourceEngagements ResourceEngagement[]
-
-  @@map("users")
-}
-
-model Patient {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation("UserPatient", fields: [userId], references: [id], onDelete: Cascade)
-
-  dateOfBirth        DateTime
-  medicalHistory     String?
-  allergies          String?
-  currentMedications String?
-  emergencyContact   String?
-
-  assignedDoctorId String?
-  assignedDoctor   User?   @relation("DoctorPatients", fields: [assignedDoctorId], references: [id])
-
-  assignedNurseId String?
-  assignedNurse   User?   @relation("NursePatients", fields: [assignedNurseId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  signals   Signal[]
-  referrals Referral[]
-
-  @@map("patients")
-}
-
-model Signal {
-  id       String         @id @default(uuid())
-  type     SignalType
-  severity SignalSeverity @default(LOW)
-  value    String
-  metadata Json?
-  score    Float          @default(0)
-
-  patientId String
-  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  recordedById String
-  recordedBy   User   @relation(fields: [recordedById], references: [id])
-
-  timestamp DateTime @default(now())
-  createdAt DateTime @default(now())
-
-  @@index([patientId, timestamp])
-  @@index([severity])
-  @@map("signals")
-}
-
-model Referral {
-  id       String         @id @default(uuid())
-  status   ReferralStatus @default(PENDING)
-  reason   String
-  notes    String?
-  priority Int            @default(1)
-
-  patientId String
-  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  fromUserId String
-  fromUser   User   @relation("CreatedReferrals", fields: [fromUserId], references: [id])
-
-  toUserId String
-  toUser   User   @relation("ReceivedReferrals", fields: [toUserId], references: [id])
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  completedAt DateTime?
-
-  @@index([patientId])
-  @@index([status])
-  @@map("referrals")
-}
-
-model Memory {
-  id        String  @id @default(uuid())
-  content   String
-  embedding String? // JSON array of floats
-  metadata  Json?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  conversationId String?
-  importance     Float   @default(0.5)
-
-  createdAt  DateTime @default(now())
-  accessedAt DateTime @default(now())
-
-  @@index([userId, conversationId])
-  @@index([importance])
-  @@map("memories")
-}
-
-model MemoryMoment {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String
-  emotion   String
-  tone      String
-  vectorId  String
-  source    String?  @default("text") // text | voice | chat
-  metadata  Json?    // Store audioFile, sdohFlags, etc.
-  createdAt DateTime @default(now())
-
-  @@map("memory_moments")
-}
-
-model Goal {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  points    Int
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-
-  dailyActions DailyAction[]
-  feedEvents   FeedEvent[]
-
-  @@map("goals")
-}
-
-model DailyAction {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goalId    String?
-  goal      Goal?    @relation(fields: [goalId], references: [id])
-  content   String
-  points    Int
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@map("daily_actions")
-}
-
-model ReferralLoop {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resource  String
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("referral_loops")
-}
-
-model SignalEvent {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String
-  delta     Float
-  createdAt DateTime @default(now())
-
-  @@map("signal_events")
-}
-
-model FeedEvent {
-  id        String   @id @default(cuid())
-  type      String   // GOAL_CREATED, GOAL_COMPLETED, DAILY_ACTION_COMPLETED, etc.
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goalId    String?  // Optional reference for goal-related events
-  goal      Goal?    @relation(fields: [goalId], references: [id])
-  message   String   // Human-readable text for frontend
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([type])
-  @@index([createdAt])
-  @@map("feed_events")
-}
-
-model SignalScore {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Category Scores (0-10 scale, higher = more risk/concern)
-  medicationAdherence Float @default(0)
-  mentalHealthRisk    Float @default(0)
-  socialIsolation     Float @default(0)
-  careCoordination    Float @default(0)
-  systemTrust         Float @default(0)
-
-  // Overall composite score
-  overallRisk Float @default(0)
-
-  // Momentum indicators (-1 to 1: negative to positive)
-  trendMedication  Float @default(0)
-  trendMentalHealth Float @default(0)
-  trendSocial      Float @default(0)
-
-  // Contextual metadata
-  totalMoments       Int      @default(0)
-  totalGoalsCompleted Int     @default(0)
-  streakDays         Int      @default(0)
-  lastActivityAt     DateTime?
-
-  // SDOH (Social Determinants of Health) detected needs
-  detectedNeeds      String[] @default([])
-  sdohRisk           Float    @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([overallRisk])
-  @@index([createdAt])
-  @@map("signal_scores")
-}
-
-model ResourceEngagement {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Resource details
-  resourceId    String?  // Optional reference to resource catalog
-  resourceName  String   @default("") // e.g., "Food bank referral", "Housing assistance"
-  resourceType  String   @default("") // e.g., "food", "housing", "transportation"
-  
-  // SDOH need this addresses
-  needType   String   // e.g., "FOOD_INSECURITY", "HOUSING", "TRANSPORTATION"
-  
-  // Lifecycle tracking
-  status     String   // "DETECTED" | "OFFERED" | "ACCEPTED" | "DECLINED" | "COMPLETED" | "FAILED" | "ABANDONED" | "ESCALATED"
-  
-  // Detection metadata
-  confidence         Float?   // 0-1 confidence score from NLP
-  detectionContext   String?  // Excerpt from conversation that triggered detection
-  
-  // Timestamps
-  detectedAt   DateTime  @default(now())
-  offeredAt    DateTime?
-  acceptedAt   DateTime?
-  declinedAt   DateTime?
-  completedAt  DateTime?
-  failedAt     DateTime?
-  followedUpAt DateTime?
-  closedAt     DateTime?
-  lastFollowUpAt DateTime?
-  
-  // Outcome tracking
-  successRating Int?     // 1-5 scale
-  impactNotes   String?  // Free text about impact
-  
-  // Additional metadata
-  offeredBy     String?  // System, provider, etc.
-  declineReason String?  // If user declined
-  metadata      Json     @default("{}")  // Flexible storage for triggers, followUpCount, etc.
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
-  @@index([needType])
-  @@index([createdAt])
-  @@index([detectedAt])
-  @@map("resource_engagements")
+enum UserRole {
+  ADMIN
+  DOCTOR
+  NURSE
+  PATIENT
+  CAREGIVER
 }
