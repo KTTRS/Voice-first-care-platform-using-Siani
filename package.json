@@ -5,5 +5,17 @@
     "packages/backend",
     "packages/dashboard",
     "packages/mobile"
-  ]
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:dashboard": "npm run dev --workspace=packages/dashboard",
+    "dev:mobile": "npm run dev --workspace=packages/mobile",
+    "build:backend": "npm run build --workspace=packages/backend",
+    "build:dashboard": "npm run build --workspace=packages/dashboard",
+    "build:all": "npm run build:backend && npm run build:dashboard",
+    "test:backend": "npm test --workspace=packages/backend",
+    "test:dashboard": "npm test --workspace=packages/dashboard",
+    "test:mobile": "npm test --workspace=packages/mobile",
+    "test:all": "npm test --workspaces"
+  }
 }
