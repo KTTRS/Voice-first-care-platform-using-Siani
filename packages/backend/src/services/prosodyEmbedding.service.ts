@@ -33,6 +33,8 @@ const EMOTION_INTENSITY_MAP: Record<EmotionLevel, number> = {
   detached: 0.1, // Withdrawn, minimal engagement
   anxious: 0.7, // Worried, tense
   calm: 0.4, // Peaceful, stable
+  guarded: 0.6, // Cautious, reserved
+  lit: 0.8, // Elevated, energized
 };
 
 class ProsodyEmbeddingService {

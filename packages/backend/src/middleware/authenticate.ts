@@ -1,11 +1,13 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
+import { Scope } from "./rbac";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email?: string;
     role?: string;
+    scopes?: Scope[]; // Add scopes to user object
   };
 }
 
@@ -31,13 +33,15 @@ export const authenticate = (
       userId: string;
       email?: string;
       role?: string;
+      scopes?: Scope[];
     };
 
-    // Attach user info to request
+    // Attach user info to request (including scopes)
     (req as any).user = {
       id: payload.userId,
       email: payload.email,
       role: payload.role,
+      scopes: payload.scopes || [],
     };
 
     next();
