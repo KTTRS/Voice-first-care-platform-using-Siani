@@ -42,6 +42,20 @@ enum ReferralStatus {
   CANCELLED
 }
 
+// Conversation system enums
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// Emotion states mapped from classifier (Calm/Guarded/Lit)
+enum EmotionState {
+  CALM
+  GUARDED
+  LIT
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -71,6 +85,10 @@ model User {
   resourceEngagements ResourceEngagement[]
   relationalMemories RelationalMemory[]
   relationalContext  RelationalContext?
+  // Backrelation for event store (actor)
+  events             Event[]
+  // Backrelation for conversations
+  conversations      Conversation[]
 
   @@map("users")
 }
@@ -409,4 +427,66 @@ model AuditLog {
   @@index([timestamp])
   @@index([success])
   @@map("audit_logs")
+}
+
+// Immutable event store for foundational event-sourcing bridge
+// Captures all domain events (check_in, referral_initiated, signal_scored, memory_created, etc.)
+// Append-only: never update, only create. Use timestamp ordering for reconstruction.
+model Event {
+  id          String   @id @default(cuid())
+  type        String   // e.g., CHECK_IN, REFERRAL_INITIATED, SIGNAL_SCORED
+  actorUserId String?  // user initiating (nullable for system events)
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+  entityType  String?  // e.g., "Referral", "Signal", "MemoryMoment"
+  entityId    String?  // ID of the entity affected
+  // Arbitrary payload stored as JSON for extensibility (must be redacted before insert)
+  payload     Json?
+  // Compliance & classification tags (HEDIS, STAR, CMS, SDOH, PRIVACY)
+  tags        String[] @default([])
+  // Correlation id for grouping events in a single logical transaction/session
+  correlationId String? @default("")
+  // Trace id for distributed tracing (future use)
+  traceId       String? @default("")
+  // Version for evolution of event structure
+  schemaVersion Int      @default(1)
+  // Immutability timestamp
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([type])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([occurredAt])
+  @@map("events")
+}
+
+// High-level conversation session anchored to a single user.
+// Each Conversation contains an ordered list of Message objects.
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+// Atomic message within a conversation: user input or assistant response.
+// Stores text, optional emotion classification, and optional synthesized audio URL.
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  text           String
+  emotion        EmotionState?
+  audioUrl       String?
+  occurredAt     DateTime      @default(now()) // When the utterance happened
+  createdAt      DateTime      @default(now())
+
+  @@index([conversationId, occurredAt])
+  @@map("messages")
 }

@@ -29,6 +29,8 @@ import { initTTSService } from "./routes/tts.routes";
 import emotionClassifierRouter from "./routes/emotionClassifier.routes";
 import relationalMemoryRouter from "./routes/relationalMemory.routes";
 import sianiIntelligenceRouter from "./routes/sianiIntelligence.routes";
+import sianiRouter from "./routes/siani.routes";
+import eventRouter from "./routes/event.routes";
 import { scheduleDailyCheckins } from "./jobs/schedulers/dailyCheckins";
 import { scheduleDailyStreakCheck } from "./jobs/schedulers/dailyStreakCheck";
 import { scheduleDailySignalUpdate } from "./jobs/schedulers/dailySignalUpdate";
@@ -85,7 +87,8 @@ app.use("/api/voice", voiceRouter); // Voice analysis and transcription
 app.use("/api/tts", ttsRouter); // Text-to-speech with prosody
 app.use("/api/emotion", emotionClassifierRouter); // Emotion classification (Calm, Guarded, Lit)
 app.use("/api/memory/relational", relationalMemoryRouter); // Relational memory with emotional context
-app.use("/api/siani", sianiIntelligenceRouter); // Integrated intelligence pipeline
+app.use("/api/siani/intelligence", sianiIntelligenceRouter); // Integrated intelligence pipeline
+app.use("/api/siani", sianiRouter); // Siani conversation endpoints
 app.use("/api/memory-moments", memoryMomentsRouter);
 app.use("/api/goals", goalsRouter);
 app.use("/api/daily-actions", dailyActionsRouter);
@@ -94,6 +97,7 @@ app.use("/api/signal-events", signalEventsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/feed", feedRouter);
 app.use("/api/streaks", streaksRouter);
+app.use("/api/events", eventRouter); // Immutable event store
 
 // scheduleDailyCheckins(); // Temporarily disabled
 scheduleDailyStreakCheck(); // Enable daily streak tracking

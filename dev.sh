@@ -5,10 +5,7 @@ set -e
 echo "🚀 Starting Sainte Development Environment..."
 echo ""
 
-# Load environment variables
-if [ -f packages/backend/.env ]; then
-    export $(cat packages/backend/.env | grep -v '^#' | xargs)
-fi
+## No need to export all .env variables here; Docker Compose and backend will load them as needed
 
 # Function to check if a port is in use
 check_port() {
