@@ -24,9 +24,15 @@ import { relationalMemoryService } from "./relationalMemory.service";
 import { eventService } from "./event.service";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const MOCK_MODE =
+  !process.env.OPENAI_API_KEY ||
+  process.env.OPENAI_API_KEY === "your-openai-api-key";
+
+const openai = MOCK_MODE
+  ? null
+  : new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
 export interface SendMessageParams {
   userId: string;
@@ -255,8 +261,23 @@ Guidelines:
 - Ask open-ended questions that restore agency
 - Validate emotions without pathologizing`;
 
+    // Mock mode for testing without OpenAI API key
+    if (MOCK_MODE) {
+      console.log(
+        "⚠️  LLM Mock Mode: Returning placeholder response (OpenAI API key not configured)"
+      );
+      // Return culturally warm mock response based on emotion
+      if (userEmotion === "GUARDED" || userEmotion === "guarded") {
+        return "I can sense that tension. Take a breath with me. You don't have to carry it alone.";
+      } else if (userEmotion === "LIT" || userEmotion === "lit") {
+        return "I love seeing this energy in you! What feels most alive for you right now?";
+      } else {
+        return "I'm here with you. Tell me what's on your heart.";
+      }
+    }
+
     try {
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },

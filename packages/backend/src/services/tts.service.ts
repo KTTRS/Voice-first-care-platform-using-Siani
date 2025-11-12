@@ -1,9 +1,15 @@
 import OpenAI from "openai";
 import { EmotionState } from "@prisma/client";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const MOCK_MODE =
+  !process.env.OPENAI_API_KEY ||
+  process.env.OPENAI_API_KEY === "your-openai-api-key";
+
+const openai = MOCK_MODE
+  ? null
+  : new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
 export interface TTSParams {
   text: string;
@@ -37,8 +43,17 @@ export const ttsService = {
       selectedVoice = "alloy"; // Energetic, supportive
     }
 
+    // Mock mode for testing without OpenAI API key
+    if (MOCK_MODE) {
+      console.log(
+        "⚠️  TTS Mock Mode: Returning placeholder audio (OpenAI API key not configured)"
+      );
+      // Return a minimal base64 placeholder (empty MP3 header)
+      return "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAABhADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwP////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAYQAAAAAAAAAAAAAAAAAAAAAA";
+    }
+
     try {
-      const mp3Response = await openai.audio.speech.create({
+      const mp3Response = await openai!.audio.speech.create({
         model: "tts-1",
         voice: selectedVoice,
         input: text,

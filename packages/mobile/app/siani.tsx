@@ -46,7 +46,9 @@ export default function SianiScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [currentEmotion, setCurrentEmotion] = useState<"CALM" | "GUARDED" | "LIT">("CALM");
+  const [currentEmotion, setCurrentEmotion] = useState<
+    "CALM" | "GUARDED" | "LIT"
+  >("CALM");
   const scrollRef = useRef<ScrollView>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -91,11 +93,14 @@ export default function SianiScreen() {
       if (!token) return;
 
       // Get latest conversation
-      const response = await fetch(`${API_URL}/api/siani/conversations?limit=1`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_URL}/api/siani/conversations?limit=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.ok) {
         const conversations = await response.json();
@@ -122,7 +127,10 @@ export default function SianiScreen() {
       if (response.ok) {
         const data = await response.json();
         setMessages(data.messages || []);
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+        setTimeout(
+          () => scrollRef.current?.scrollToEnd({ animated: true }),
+          100
+        );
       }
     } catch (error) {
       console.error("Error loading history:", error);
@@ -226,8 +234,13 @@ export default function SianiScreen() {
           await playAudioResponse(reply.audioUrl);
         }
 
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+        await Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success
+        );
+        setTimeout(
+          () => scrollRef.current?.scrollToEnd({ animated: true }),
+          100
+        );
       };
 
       reader.readAsDataURL(audioBlob);
