@@ -65,6 +65,14 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="siani"
+          options={{
+            title: "Siani",
+            headerShown: false,
+            presentation: "modal",
+          }}
+        />
+        <Stack.Screen
           name="goals"
           options={{
             title: "My Goals",
