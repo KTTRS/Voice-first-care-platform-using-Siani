@@ -48,13 +48,34 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 - Weaviate (if not using Docker)
 - OpenAI API key (optional, for AI features)
 
-### Option 1: GitHub Codespaces (Recommended)
+### Option 1: Automated Setup (Recommended) ⚡
+
+**If you just cloned the repo or everything broke**, use the automated setup script:
+
+```bash
+git clone https://github.com/KTTRS/Voice-first-care-platform-using-Siani.git
+cd Voice-first-care-platform-using-Siani
+./setup.sh
+```
+
+This script automatically:
+- ✅ Installs all dependencies
+- ✅ Creates `.env` configuration files
+- ✅ Starts Docker services (PostgreSQL, Redis, Weaviate)
+- ✅ Generates Prisma client
+- ✅ Runs database migrations
+- ✅ Seeds test data
+
+**Having issues?** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+### Option 2: GitHub Codespaces
 
 1. Click "Code" → "Open with Codespaces"
 2. Wait for the environment to set up
-3. Start the services (see Running the Platform below)
+3. Run `./setup.sh` to configure everything
+4. Start the services (see Running the Platform below)
 
-### Option 2: Local Development
+### Option 3: Manual Setup
 
 1. **Clone the repository**
 
@@ -72,10 +93,10 @@ A comprehensive full-stack AI care platform with voice-first interface, built wi
 3. **Start Docker services**
 
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
-   This starts PostgreSQL and Weaviate.
+   This starts PostgreSQL, Redis, and Weaviate.
 
 4. **Configure environment variables**
 
