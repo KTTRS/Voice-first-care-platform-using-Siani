@@ -25,6 +25,7 @@ import messagesRouter from "./routes/messages";
 import voiceRouter from "./routes/voice";
 import ttsRouter from "./routes/tts.routes";
 import { initProsodyWebSocket } from "./routes/prosody.routes";
+import { initVoiceStreamWebSocket } from "./routes/voiceStream.routes";
 import { initTTSService } from "./routes/tts.routes";
 import emotionClassifierRouter from "./routes/emotionClassifier.routes";
 import relationalMemoryRouter from "./routes/relationalMemory.routes";
@@ -43,10 +44,13 @@ const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+// Revert to standard Helmet configuration (remove unsafe-inline allowances)
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// NOTE: Removed /test static route used for temporary web fallback (voice-first product should not expose text chat test page)
 // Logging middleware disabled temporarily due to file descriptor issues
 // app.use((req, _res, next) => {
 //   const logEntry = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}\n`;
@@ -118,6 +122,7 @@ initializeWebSocket(server);
 
 // Initialize Prosody WebSocket
 const prosodyWss = initProsodyWebSocket(server);
+initVoiceStreamWebSocket(server);
 initTTSService(prosodyWss);
 console.log(`🎵 Prosody WebSocket available at ws://localhost:${PORT}/prosody`);
 

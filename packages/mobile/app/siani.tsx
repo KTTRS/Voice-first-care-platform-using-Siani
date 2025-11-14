@@ -23,11 +23,11 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 import SianiAvatar from "../components/SianiAvatar";
 import WaveformVisualizer from "../components/WaveformVisualizer";
+import { getToken } from "../lib/api";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -89,7 +89,7 @@ export default function SianiScreen() {
 
   const loadConversation = async () => {
     try {
-      const token = await AsyncStorage.getItem("authToken");
+      const token = await getToken();
       if (!token) return;
 
       // Get latest conversation
@@ -117,7 +117,7 @@ export default function SianiScreen() {
 
   const loadHistory = async (convoId: string) => {
     try {
-      const token = await AsyncStorage.getItem("authToken");
+      const token = await getToken();
       const response = await fetch(`${API_URL}/api/siani/history/${convoId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -173,7 +173,7 @@ export default function SianiScreen() {
     setIsProcessing(true);
 
     try {
-      const token = await AsyncStorage.getItem("authToken");
+      const token = await getToken();
       if (!token) throw new Error("Not authenticated");
 
       // Read audio file and convert to base64

@@ -8,7 +8,7 @@ import {
   listUsers,
   updateUser,
 } from '../services/user.service';
-import { authenticate } from '../utils/auth';
+import { authenticate } from "../middleware/authenticate";
 import { getPaginationParams } from '../utils/pagination';
 import { createUserSchema, updateUserSchema } from '../validators/user.validator';
 import { logEvent } from '../utils/logger';

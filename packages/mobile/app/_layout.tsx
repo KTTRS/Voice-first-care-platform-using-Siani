@@ -21,9 +21,10 @@ export default function RootLayout() {
     if (isAuthenticated === null) return; // Still loading
 
     const inAuthGroup = segments[0] === "login";
+    const inWebTest = segments[0] === "siani-web";
 
-    if (!isAuthenticated && !inAuthGroup) {
-      // Redirect to login if not authenticated
+    if (!isAuthenticated && !inAuthGroup && !inWebTest) {
+      // Redirect to login if not authenticated (except for siani-web test page)
       router.replace("/login");
     } else if (isAuthenticated && inAuthGroup) {
       // Redirect to home if already authenticated
@@ -97,6 +98,13 @@ export default function RootLayout() {
           name="resource-assistant"
           options={{
             title: "Resource Assistant",
+            headerShown: true,
+          }}
+        />
+        <Stack.Screen
+          name="siani-web"
+          options={{
+            title: "Siani Web Test",
             headerShown: true,
           }}
         />

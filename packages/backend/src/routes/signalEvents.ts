@@ -8,7 +8,7 @@ import {
   updateSignalEvent,
 } from '../services/signalEvent.service';
 import { handlePrismaError } from '../utils/prismaError';
-import { authenticate } from '../utils/auth';
+import { authenticate } from "../middleware/authenticate";
 import { getPaginationParams } from '../utils/pagination';
 import {
   createSignalEventSchema,

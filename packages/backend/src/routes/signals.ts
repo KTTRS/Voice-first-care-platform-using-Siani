@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { z } from "zod";
 import prisma from "../utils/db";
-import { authenticate } from "../utils/auth";
+import { authenticate } from "../middleware/authenticate";
 import { signalScoringEngine } from "../services/scoring.service";
 import { triggerSignalUpdate } from "../jobs/queues/signalQueue";
 
