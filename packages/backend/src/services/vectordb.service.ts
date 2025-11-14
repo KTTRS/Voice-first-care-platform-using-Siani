@@ -1,11 +1,16 @@
 import weaviate, { WeaviateClient, ApiKey } from "weaviate-ts-client";
+import logger from "../utils/logger";
 
 class VectorDBService {
   private client: WeaviateClient | null = null;
 
   async initialize() {
     try {
-      const clientConfig: any = {
+      const clientConfig: {
+        scheme: string;
+        host: string;
+        apiKey?: ApiKey;
+      } = {
         scheme: process.env.WEAVIATE_URL?.startsWith("https")
           ? "https"
           : "http",
@@ -23,9 +28,9 @@ class VectorDBService {
       // Create schema if it doesn't exist
       await this.createSchema();
 
-      console.log("✅ Weaviate connection established");
+      logger.info("Weaviate connection established");
     } catch (error) {
-      console.error("❌ Failed to connect to Weaviate:", error);
+      logger.error("Failed to connect to Weaviate:", { error: error.message });
       // Don't throw - allow app to start even if vector DB is not available
     }
   }

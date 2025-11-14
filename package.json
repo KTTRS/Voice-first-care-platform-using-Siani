@@ -1,9 +1,22 @@
 {
   "name": "voice-first-care-platform",
   "private": true,
+  "packageManager": "npm@10.2.0",
   "workspaces": [
     "packages/backend",
     "packages/dashboard",
     "packages/mobile"
-  ]
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace packages/backend run dev",
+    "dev:dashboard": "npm --workspace packages/dashboard run dev",
+    "dev:mobile": "npm --workspace packages/mobile run dev",
+    "start:backend": "npm --workspace packages/backend run start",
+    "build:backend": "npm --workspace packages/backend run build",
+    "build:dashboard": "npm --workspace packages/dashboard run build",
+    "test:backend": "npm --workspace packages/backend run test",
+    "test:mobile": "npm --workspace packages/mobile run test",
+    "test:all": "npm run test --workspaces --if-present",
+    "lint:dashboard": "npm --workspace packages/dashboard run lint"
+  }
 }

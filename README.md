@@ -213,6 +213,15 @@ sainte-ai-care-platform/
 └── .devcontainer/        # Codespaces configuration
 ```
 
+### Tooling & Root Scripts
+
+- This repo is aligned to Node.js 18+ (`.nvmrc`) and `npm@10.2.0` (`packageManager`) for predictable tooling.
+- Use the workspace scripts instead of running each package manually:
+  - `npm run dev:backend`, `npm run dev:dashboard`, `npm run dev:mobile`
+  - `npm run start:backend`, `npm run build:backend`, `npm run build:dashboard`
+  - `npm run test:backend`, `npm run test:mobile`, `npm run test:all`
+  - `npm run lint:dashboard`
+
 ### Building for Production
 
 ```bash
