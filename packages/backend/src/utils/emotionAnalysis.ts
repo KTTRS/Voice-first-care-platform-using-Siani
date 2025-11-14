@@ -9,7 +9,9 @@ export type EmotionLevel =
   | "detached"
   | "neutral"
   | "anxious"
-  | "calm";
+  | "calm"
+  | "guarded"
+  | "lit";
 export type Intent =
   | "ask-for-help"
   | "journal"
