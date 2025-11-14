@@ -413,3 +413,71 @@ model AuditLog {
   @@index([success])
   @@map("audit_logs")
 }
+
+model RelationalMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Content and context
+  content   String   // The conversation content
+  emotionVector String // JSON: [calm, guarded, lit] scores
+  topics    String   // JSON: array of topic strings
+  
+  // Vector embedding for similarity search
+  embedding String   // JSON: conversation embedding vector
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("relational_memories")
+}
+
+model RelationalContext {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Aggregated relational metrics
+  topics    String   // JSON: array of recurring topics
+  emotionVectorMean String // JSON: average emotional state
+  
+  // Trust and continuity scores (0-1)
+  trustIndex      Float @default(0.5) // Frequency of emotionally open moments
+  resonanceIndex  Float @default(0.5) // Emotional convergence with Siani
+  continuityScore Float @default(0.5) // Emotional/topical overlap between sessions
+  
+  lastUpdate DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@map("relational_contexts")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  
+  // User and action details
+  userId    String?  // Nullable for failed login attempts (user may not exist)
+  action    String   // e.g., "LOGIN", "LOGOUT", "REGISTER", "SCOPE_CHECK", "TOKEN_REFRESH"
+  resource  String?  // Resource being accessed (e.g., "/api/signals", "patient:read")
+  
+  // Result
+  success   Boolean  @default(true)
+  errorMessage String? // Error details for failed actions
+  
+  // Request metadata
+  ipAddress String?
+  userAgent String?
+  
+  timestamp DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([success])
+  @@map("audit_logs")
+}
