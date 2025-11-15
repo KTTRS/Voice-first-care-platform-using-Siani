@@ -424,7 +424,8 @@ export const transcribeAudio = async (
  * POST /api/voice/analyze
  */
 export const analyzeVoice = async (
-  audioUri: string
+  audioUri: string,
+  extraFields?: Record<string, string>
 ): Promise<{
   transcription: string;
   emotion: string;
@@ -433,6 +434,7 @@ export const analyzeVoice = async (
   memoryMomentId: string;
   needsIntervention: boolean;
   sianiResponse?: string;
+  feedEventId?: string;
 }> => {
   const token = await getToken();
 
@@ -446,6 +448,14 @@ export const analyzeVoice = async (
     type: "audio/m4a",
     name: "recording.m4a",
   } as any);
+
+  if (extraFields) {
+    Object.entries(extraFields).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value);
+      }
+    });
+  }
 
   console.log(`[API] POST /api/voice/analyze`);
 

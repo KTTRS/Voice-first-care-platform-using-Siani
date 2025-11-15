@@ -10,13 +10,17 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { login } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
+  const { login, register, loading } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -24,18 +28,38 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
     try {
-      const result = await login(email, password);
-      console.log("Login successful:", result.user);
-
-      // Navigate to main app
+      await login(email, password);
       router.replace("/");
     } catch (error: any) {
       console.error("Login error:", error);
       Alert.alert("Login Failed", error.message || "Invalid credentials");
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!email || !password || !firstName || !lastName) {
+      Alert.alert("Error", "Please complete all fields");
+      return;
+    }
+
+    setErrorMessage(null);
+    try {
+      await register({ email, password, firstName, lastName });
+      router.replace("/");
+    } catch (error: any) {
+      const message = error?.message || "Unable to sign up";
+      console.error("Signup error:", error);
+      setErrorMessage(message);
+      Alert.alert("Sign Up Failed", message);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (mode === "login") {
+      handleLogin();
+    } else {
+      handleSignup();
     }
   };
 
@@ -51,6 +75,62 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
+          <View style={styles.modeSwitcher}>
+            <TouchableOpacity
+              style={[styles.modeButton, mode === "login" && styles.modeActive]}
+              onPress={() => setMode("login")}
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  mode === "login" && styles.modeButtonTextActive,
+                ]}
+              >
+                Sign In
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeButton, mode === "signup" && styles.modeActive]}
+              onPress={() => setMode("signup")}
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  mode === "signup" && styles.modeButtonTextActive,
+                ]}
+              >
+                Create Account
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {mode === "signup" && (
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, styles.halfInput]}>
+                <Text style={styles.label}>First Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Jane"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  editable={!loading}
+                />
+              </View>
+              <View style={[styles.inputGroup, styles.halfInput]}>
+                <Text style={styles.label}>Last Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Doe"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  editable={!loading}
+                />
+              </View>
+            </View>
+          )}
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -80,13 +160,21 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={handleSubmit}
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? "Signing in..." : "Sign In"}
+              {loading
+                ? mode === "login"
+                  ? "Signing in..."
+                  : "Creating account..."
+                : mode === "login"
+                ? "Sign In"
+                : "Create Account"}
             </Text>
           </TouchableOpacity>
+
+          {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
         </View>
 
         <View style={styles.footer}>
@@ -135,8 +223,44 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  modeSwitcher: {
+    flexDirection: "row",
+    marginBottom: 16,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 12,
+    padding: 4,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  modeActive: {
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  modeButtonTextActive: {
+    color: "#111827",
+  },
   inputGroup: {
     marginBottom: 16,
+  },
+  row: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  halfInput: {
+    flex: 1,
   },
   label: {
     fontSize: 14,
@@ -166,6 +290,12 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  errorText: {
+    marginTop: 12,
+    color: "#dc2626",
+    fontSize: 13,
+    textAlign: "center",
   },
   footer: {
     marginTop: 30,
