@@ -1,35 +1,35 @@
-import { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { useEffect } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { getToken } from "../lib/api";
+import { AuthProvider, useAuth } from "../context/AuthContext";
 
-export default function RootLayout() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+function NavigationStack() {
+  const { token, initializing } = useAuth();
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const token = await getToken();
-    setIsAuthenticated(!!token);
-  };
-
-  useEffect(() => {
-    if (isAuthenticated === null) return; // Still loading
+    if (initializing) return;
 
     const inAuthGroup = segments[0] === "login";
 
-    if (!isAuthenticated && !inAuthGroup) {
-      // Redirect to login if not authenticated
+    if (!token && !inAuthGroup) {
       router.replace("/login");
-    } else if (isAuthenticated && inAuthGroup) {
-      // Redirect to home if already authenticated
+    } else if (token && inAuthGroup) {
       router.replace("/");
     }
-  }, [isAuthenticated, segments]);
+  }, [token, segments, initializing]);
+
+  if (initializing) {
+    return (
+      <View
+        style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -94,5 +94,13 @@ export default function RootLayout() {
         />
       </Stack>
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <NavigationStack />
+    </AuthProvider>
   );
 }
